@@ -1,0 +1,88 @@
+// 写真アップロードAPI(G5の裏側)
+// POST multipart/form-data { file, spotId } + Authorization: Bearer <合言葉トークン>
+// 1. トークン検証(サーバー側) 2. photosバケットへ保存 3. photos INSERT
+// 4. 1枚目なら progress 記録(=ミッション達成) → { completedNow } で演出を出し分け
+// storage_path はバケット内パス {trip_id}/{spot_id}/{ts}.jpg(バケット名: photos)
+import { NextResponse } from "next/server";
+import { createServerClient } from "@/lib/supabase/server";
+import { verifyTripToken } from "@/lib/auth";
+import type { Photo, Spot, Trip } from "@/lib/supabase/types";
+
+export async function POST(
+  req: Request,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  const { slug } = await params;
+  const token = (req.headers.get("authorization") ?? "").replace(/^Bearer /, "");
+
+  const form = await req.formData().catch(() => null);
+  const file = form?.get("file");
+  const spotId = form?.get("spotId");
+  if (!(file instanceof File) || typeof spotId !== "string") {
+    return NextResponse.json({ error: "bad request" }, { status: 400 });
+  }
+
+  const supabase = createServerClient();
+  const { data: trip } = (await supabase
+    .from("trips")
+    .select("id")
+    .eq("slug", slug)
+    .single()) as { data: Pick<Trip, "id"> | null };
+  if (!trip) return NextResponse.json({ error: "not found" }, { status: 404 });
+  if (!token || !verifyTripToken(trip.id, token)) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  const { data: spot } = (await supabase
+    .from("spots")
+    .select("id")
+    .eq("id", spotId)
+    .eq("trip_id", trip.id)
+    .single()) as { data: Pick<Spot, "id"> | null };
+  if (!spot) return NextResponse.json({ error: "spot not found" }, { status: 404 });
+
+  const path = `${trip.id}/${spot.id}/${Date.now()}.jpg`;
+  const { error: uploadError } = await supabase.storage
+    .from("photos")
+    .upload(path, file, { contentType: file.type || "image/jpeg" });
+  if (uploadError) {
+    return NextResponse.json({ error: uploadError.message }, { status: 500 });
+  }
+
+  const { data: photo, error: insertError } = (await supabase
+    .from("photos")
+    .insert({ trip_id: trip.id, spot_id: spot.id, storage_path: path })
+    .select()
+    .single()) as { data: Photo | null; error: { message: string } | null };
+  if (insertError || !photo) {
+    return NextResponse.json(
+      { error: insertError?.message ?? "insert failed" },
+      { status: 500 }
+    );
+  }
+
+  // 1枚目のアップロードでミッション達成
+  const { data: existing } = await supabase
+    .from("progress")
+    .select("spot_id")
+    .eq("trip_id", trip.id)
+    .eq("spot_id", spot.id)
+    .maybeSingle();
+  let completedNow = false;
+  if (!existing) {
+    const { error: progressError } = await supabase
+      .from("progress")
+      .insert({ trip_id: trip.id, spot_id: spot.id });
+    completedNow = !progressError;
+  }
+
+  const { data: signed } = await supabase.storage
+    .from("photos")
+    .createSignedUrl(path, 60 * 60);
+
+  return NextResponse.json({
+    photoId: photo.id,
+    signedUrl: signed?.signedUrl ?? null,
+    completedNow,
+  });
+}

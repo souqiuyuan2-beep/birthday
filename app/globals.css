@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+/* テーマ: 薄い水色をアクセントに、白・生成りベース+魔法っぽい淡い空色 */
+@theme {
+  --color-theme: #a8d8ea;
+  --color-theme-deep: #6fb6d4;
+  --color-paper: #fdfbf7;
+  --color-gold: #d9b45b;
+  --font-sans: var(--font-sans-jp), "Hiragino Kaku Gothic ProN", sans-serif;
+  --font-serif: var(--font-serif-jp), "Hiragino Mincho ProN", serif;
+}
+
+html {
+  background-color: var(--color-paper);
+}
+
+body {
+  /* 上は生成り、下へ行くほど淡い空色(魔法の空気感) */
+  background: linear-gradient(180deg, #fdfbf7 0%, #f6faf8 40%, #e9f4fa 100%);
+  min-height: 100dvh;
+  color: #3d3a34;
+}
+
+/* ---- 演出用キーフレーム ---- */
+
+/* 星屑の瞬き */
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.5) rotate(0deg);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1) rotate(20deg);
+  }
+}
+
+/* ふわふわ浮かぶ */
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+/* 挑戦中スタンプの脈打つリング */
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(168, 216, 234, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 14px rgba(168, 216, 234, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(168, 216, 234, 0);
+  }
+}
+
+/* 進捗バーのきらめき */
+@keyframes shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+
+/* エンディングのKen Burns風ズーム */
+@keyframes kenburns {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.12);
+  }
+}
+
+/* 紙吹雪 */
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-5vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(110vh) rotate(560deg);
+    opacity: 0.8;
+  }
+}
