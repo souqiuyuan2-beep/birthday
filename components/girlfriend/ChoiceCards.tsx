@@ -16,10 +16,16 @@ type Option = {
   message: string | null;
 };
 
-export default function ChoiceCards({ options }: { options: Option[] }) {
+export default function ChoiceCards({
+  options,
+  initialSelectedId = null,
+}: {
+  options: Option[];
+  initialSelectedId?: string | null;
+}) {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
 

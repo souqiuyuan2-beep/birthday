@@ -102,8 +102,11 @@ export default async function HomePage({
           const state = group.done ? "done" : i === currentIdx ? "current" : "locked";
           const isLast = i === groups.length - 1;
           const spot = group.effective;
+          // 多択から選んだスポットは選んだ時点で名前を見せる(reveal_name off でも)
+          const chosenFromChoice = group.options.length > 1 && !!spot;
           const showName =
-            state === "done" || (state === "current" && spot?.reveal_name);
+            state === "done" ||
+            (state === "current" && (spot?.reveal_name || chosenFromChoice));
           const pendingChoice = state === "current" && !spot;
           const stamp = spot ? stampUrl.get(spot.id) : undefined;
 

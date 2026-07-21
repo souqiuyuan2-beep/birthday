@@ -73,7 +73,11 @@ export default async function MissionPage({
     return url ? [{ id: photo.id, url }] : [];
   });
 
-  const showName = spot.reveal_name || done;
+  // 多択から選んだスポットは、選んだ時点で名前を見せる(reveal_name が off でも)
+  const isChosenFromChoice = group.options.length > 1;
+  const showName = spot.reveal_name || done || isChosenFromChoice;
+  // 写真をアップするまでは選び直せる(達成したら確定)
+  const reselectOrder = isChosenFromChoice && !done ? group.sortOrder : null;
 
   return (
     <MissionCard
@@ -84,6 +88,7 @@ export default async function MissionPage({
       message={spot.message}
       done={done}
       initialPhotos={initialPhotos}
+      reselectOrder={reselectOrder}
     />
   );
 }

@@ -22,6 +22,7 @@ type Props = {
   message: string | null;
   done: boolean;
   initialPhotos: PhotoItem[];
+  reselectOrder: number | null; // 多択で写真前なら選び直しリンクを出す番目
 };
 
 type UploadState =
@@ -38,6 +39,7 @@ export default function MissionCard({
   message,
   done,
   initialPhotos,
+  reselectOrder,
 }: Props) {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
@@ -171,6 +173,15 @@ export default function MissionCard({
           </p>
         )}
       </motion.section>
+
+      {reselectOrder !== null && (
+        <button
+          onClick={() => router.push(`/t/${slug}/choice/${reselectOrder}`)}
+          className="mt-4 self-center text-sm text-theme-deep underline underline-offset-4"
+        >
+          ほかの場所を選び直す
+        </button>
+      )}
 
       {photos.length > 0 && (
         <div className="mt-6 flex gap-3 overflow-x-auto p-2">
