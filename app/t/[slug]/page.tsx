@@ -220,7 +220,7 @@ export default async function HomePage({
             href={`/t/${slug}/ending`}
             className="mt-4 inline-block w-full rounded-2xl bg-theme py-4 text-base font-medium text-white shadow-md transition-transform active:scale-[0.98]"
           >
-            旅の結末をひらく
+            旅の思い出をひらく
           </Link>
           <Link
             href={`/t/${slug}/album`}
