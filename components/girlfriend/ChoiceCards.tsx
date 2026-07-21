@@ -70,10 +70,10 @@ export default function ChoiceCards({
       </button>
 
       <h1 className="relative z-10 text-center font-serif text-xl font-semibold tracking-widest">
-        どっちに行く?
+        {options.length >= 3 ? "どこに行く?" : "どっちに行く?"}
       </h1>
       <p className="mt-2 text-center text-sm text-neutral-500">
-        好きな方を選んでね
+        {options.length >= 3 ? "好きな場所を選んでね" : "好きな方を選んでね"}
       </p>
 
       <div className="relative z-10 mt-8 space-y-4">

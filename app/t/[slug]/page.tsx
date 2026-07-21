@@ -142,11 +142,14 @@ export default async function HomePage({
           const card = pendingChoice ? (
             <div className="rounded-2xl border-2 border-theme bg-white p-4 shadow-md">
               <div className="flex items-center justify-between">
-                <span className="text-base font-medium">どっちに行く?</span>
+                <span className="text-base font-medium">
+                  {group.options.length >= 3 ? "どこに行く?" : "どっちに行く?"}
+                </span>
                 <span className="text-xs text-theme-deep">選んでね ✦</span>
               </div>
               <p className="mt-2 text-sm text-neutral-600">
-                2つの場所から好きな方を選ぼう
+                {group.options.length}つの場所から
+                {group.options.length >= 3 ? "好きな場所" : "好きな方"}を選ぼう
               </p>
             </div>
           ) : (
