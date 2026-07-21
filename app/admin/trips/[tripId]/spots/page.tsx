@@ -168,7 +168,8 @@ export default function SpotsEditPage() {
                     {gi + 1}番目
                     {isPair && (
                       <span className="ml-2 rounded bg-sky-100 px-1.5 py-0.5 text-xs font-medium text-sky-700">
-                        2択 {chosenSpot ? `(「${chosenSpot.name}」を選択済み)` : "(未選択)"}
+                        {options.length}択{" "}
+                        {chosenSpot ? `(「${chosenSpot.name}」を選択済み)` : "(未選択)"}
                       </span>
                     )}
                   </span>
@@ -270,13 +271,13 @@ export default function SpotsEditPage() {
                   ))}
                 </div>
 
-                {!isPair && (
+                {options.length < 5 && (
                   <button
                     onClick={() => addOption(options[0].sort_order)}
                     disabled={busy}
                     className="mt-2 w-full rounded-xl border border-dashed border-neutral-300 py-2.5 text-sm text-neutral-500 disabled:opacity-40"
                   >
-                    + 選択肢を追加(2択にする)
+                    {isPair ? "+ 選択肢を追加" : "+ 選択肢を追加(選ばせる)"}
                   </button>
                 )}
               </li>

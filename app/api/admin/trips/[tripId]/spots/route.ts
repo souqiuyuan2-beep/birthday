@@ -27,6 +27,12 @@ export async function POST(req: Request, { params }: Ctx) {
       .eq("trip_id", tripId)
       .eq("sort_order", order);
     const ids = (groupSpots ?? []).map((s) => s.id);
+    if (ids.length >= 5) {
+      return NextResponse.json(
+        { error: "選択肢は1つの番目につき最大5個までです" },
+        { status: 409 }
+      );
+    }
     if (ids.length > 0) {
       const { data: started } = await supabase
         .from("progress")

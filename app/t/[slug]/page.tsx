@@ -176,9 +176,13 @@ export default async function HomePage({
             </div>
           );
 
+          // ロック中の多択グループは effective が null(まだ選べない)。
+          // その場合はリンクにしないので href は使われないが、null.id で落ちないよう保護する
           const href = pendingChoice
             ? `/t/${slug}/choice/${group.sortOrder}`
-            : `/t/${slug}/mission/${spot!.id}`;
+            : spot
+              ? `/t/${slug}/mission/${spot.id}`
+              : `/t/${slug}`;
 
           return (
             <li key={group.options[0].id} className="relative flex gap-4 pb-8">
