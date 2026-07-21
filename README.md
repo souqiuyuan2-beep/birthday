@@ -36,4 +36,7 @@ npx qrcode "https://<本番URL>" -o qr.png -w 600
 
 - プランは `/admin`(管理者パスワード)から作成・編集
 - 旅行ごとの合言葉は別々にする(トップページの合言葉入場が旅を判別するため)
-- メール通知: Supabase Database Webhook → Edge Function `notify-email` → Resend(未実装。実装順序の最後)
+- メール通知: 写真アップロードAPI(`/api/t/[slug]/upload`)から Resend で直接送信。
+  ミッション達成(スポットの1枚目)のときだけ、旅行の通知先メール宛に1通届く。
+  有効化するには Vercel に `RESEND_API_KEY` を設定 + 管理画面で通知先メールを登録。
+  差出人は `onboarding@resend.dev`(送信先は Resend 登録メール宛のみ・ドメイン認証不要)
