@@ -207,20 +207,16 @@ export default function EndingShow({
         >
           <div
             className="relative w-full max-w-md"
-            style={{ transformStyle: "preserve-3d", perspective: 1600 }}
+            style={{ perspective: 1600 }}
           >
-            {/* 本体(閉じている時は表紙、開いたらページ) */}
+            {/* 本体。めくられる紙が本の外へはみ出さないよう、ここで切り取る */}
             <div
-              className="relative aspect-[3/4] w-full rounded-r-xl rounded-l-md shadow-[0_30px_80px_rgba(0,0,0,0.75)]"
+              className="relative aspect-[3/4] w-full overflow-hidden rounded-r-xl rounded-l-md shadow-[0_30px_80px_rgba(0,0,0,0.75)]"
               style={{
-                // 表紙/ページのめくりを立体的に見せるための遠近
-                perspective: 1600,
-                transformStyle: "preserve-3d",
                 // 表紙をめくり始めたら、その下から中身(紙)が現れる
-                background:
-                  showPages
-                    ? "#f7f3ea"
-                    : "linear-gradient(140deg, #1d2b3a 0%, #16212e 50%, #101823 100%)",
+                background: showPages
+                  ? "#f7f3ea"
+                  : "linear-gradient(140deg, #1d2b3a 0%, #16212e 50%, #101823 100%)",
               }}
             >
               {/* 表紙: 本物の本のように左綴じで開く/閉じる */}
@@ -228,8 +224,9 @@ export default function EndingShow({
                 <div
                   className="absolute inset-0 z-20 origin-left overflow-hidden rounded-r-xl rounded-l-md"
                   style={{
-                    transformStyle: "preserve-3d",
+                    // 裏返ったら消える(表紙の裏が透けないように)
                     backfaceVisibility: "hidden",
+                    WebkitBackfaceVisibility: "hidden",
                     background:
                       "linear-gradient(140deg, #1d2b3a 0%, #16212e 50%, #101823 100%)",
                     boxShadow: "8px 0 30px rgba(0,0,0,0.45)",
@@ -303,8 +300,9 @@ export default function EndingShow({
                     <div
                       className="absolute inset-0 z-30 origin-left overflow-hidden"
                       style={{
-                        transformStyle: "preserve-3d",
+                        // 裏返ったら見えなくする(紙の裏に写真が透けないように)
                         backfaceVisibility: "hidden",
+                        WebkitBackfaceVisibility: "hidden",
                         background: "#f7f3ea",
                         boxShadow: "6px 0 24px rgba(0,0,0,0.28)",
                         borderRadius: "0 10px 10px 0",
