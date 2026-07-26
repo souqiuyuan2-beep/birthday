@@ -88,6 +88,29 @@ body {
   }
 }
 
+/* エンディング: ページの内容がやわらかく現れる */
+@keyframes page-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* エンディング: 暖かい光がゆっくり呼吸する */
+@keyframes glow-breath {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.08);
+  }
+}
+
 /* エンディングの淡い光の粒 */
 @keyframes drift {
   0% {
