@@ -88,6 +88,34 @@ body {
   }
 }
 
+/* エンディング: 表紙が左綴じで開く / 閉じる */
+@keyframes cover-open {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(-172deg);
+  }
+}
+@keyframes cover-close {
+  from {
+    transform: rotateY(-172deg);
+  }
+  to {
+    transform: rotateY(0deg);
+  }
+}
+
+/* エンディング: 中のページを1枚めくる */
+@keyframes page-flip {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(-172deg);
+  }
+}
+
 /* エンディング: ページの内容がやわらかく現れる */
 @keyframes page-in {
   from {

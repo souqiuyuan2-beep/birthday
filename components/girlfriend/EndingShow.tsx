@@ -21,6 +21,7 @@ type Stage = "fade" | "appear" | "book" | "closing" | "end";
 // ゆっくりしたテンポで余韻を大切にする
 const PAGE_MS = 7000; // 1ページの滞在時間
 const FLIP_MS = 1500; // めくりアニメーションの長さ
+const COVER_MS = 2000; // 表紙を開く/閉じる時間(ゆっくり)
 
 export default function EndingShow({
   title,
@@ -44,6 +45,16 @@ export default function EndingShow({
   const [pageVisible, setPageVisible] = useState(false);
   // めくられていく紙の表面に描く「1つ前のページ」
   const [flippingFrom, setFlippingFrom] = useState<number | null>(null);
+  // 表紙をめくっている最中か(本を開く/閉じる演出)
+  const [coverOpening, setCoverOpening] = useState(false);
+  // 表紙が完全に開き切ったか(開き切ったら表紙は畳んで見えなくする)
+  const [coverOpened, setCoverOpened] = useState(false);
+
+  // 中身のページを表示する場面(表紙をめくり始めてから、閉じ切るまで)
+  const showPages = stage === "book" || stage === "closing" || coverOpening;
+  // 表紙は開き切るまで(と閉じ直す時)描画しておく。
+  // coverOpened = めくり終わって完全に開いた状態
+  const showCover = !coverOpened;
 
   const lastPage = photos.length; // 特別ページのindex
   const isFinale = page >= lastPage;
@@ -68,8 +79,12 @@ export default function EndingShow({
       }, 260);
     }
     setStage("appear");
-    // 本が現れてから、静かに開く
-    setTimeout(() => setStage("book"), 2600);
+    // 本が現れたら表紙をゆっくりめくって開く
+    setTimeout(() => setCoverOpening(true), 1500);
+    setTimeout(() => {
+      setStage("book");
+      setCoverOpened(true); // 開き切ったので表紙は畳む
+    }, 1500 + COVER_MS);
   }
 
   // 次のページへ
@@ -95,11 +110,11 @@ export default function EndingShow({
   // ページが変わったら、内容をやわらかくフェードインさせる
   // (めくり中はめくる紙が覆っているので、その裏で静かに現れる)
   useEffect(() => {
-    if (stage !== "book") return;
+    if (!showPages) return;
     setPageVisible(false);
     const timer = setTimeout(() => setPageVisible(true), 60);
     return () => clearTimeout(timer);
-  }, [stage, page]);
+  }, [showPages, page]);
 
   // 自動でページを進める
   useEffect(() => {
@@ -111,11 +126,17 @@ export default function EndingShow({
     return () => clearTimeout(timer);
   }, [stage, page, isFinale, turnPage, paragraphs.length]);
 
-  // 本を閉じたら、余韻を残してフェードアウト
+  // 本を閉じたら(表紙が戻る)、閉じた表紙を見せてから余韻を残してフェードアウト
   useEffect(() => {
     if (stage !== "closing") return;
-    const timer = setTimeout(() => setStage("end"), 4200);
-    return () => clearTimeout(timer);
+    // 表紙を開いた状態(-172°)から再び描画し、ゆっくり0°へ戻して閉じる
+    setCoverOpened(false);
+    const close = setTimeout(() => setCoverOpening(false), 50);
+    const timer = setTimeout(() => setStage("end"), COVER_MS + 3000);
+    return () => {
+      clearTimeout(close);
+      clearTimeout(timer);
+    };
   }, [stage]);
 
   // BGMを静かに絞る
@@ -134,7 +155,6 @@ export default function EndingShow({
   }, [stage]);
 
   const showBook = stage === "appear" || stage === "book" || stage === "closing";
-  const opened = stage === "book";
 
   return (
     <main className="fixed inset-0 overflow-hidden bg-[#0b0d12] text-white">
@@ -187,23 +207,42 @@ export default function EndingShow({
         >
           <div
             className="relative w-full max-w-md"
-            style={{ transformStyle: "preserve-3d" }}
+            style={{ transformStyle: "preserve-3d", perspective: 1600 }}
           >
             {/* 本体(閉じている時は表紙、開いたらページ) */}
             <div
-              className="relative aspect-[3/4] w-full overflow-hidden rounded-r-xl rounded-l-md shadow-[0_30px_80px_rgba(0,0,0,0.75)]"
+              className="relative aspect-[3/4] w-full rounded-r-xl rounded-l-md shadow-[0_30px_80px_rgba(0,0,0,0.75)]"
               style={{
-                background: opened
-                  ? "#f7f3ea"
-                  : "linear-gradient(140deg, #1d2b3a 0%, #16212e 50%, #101823 100%)",
+                // 表紙/ページのめくりを立体的に見せるための遠近
+                perspective: 1600,
+                transformStyle: "preserve-3d",
+                // 表紙をめくり始めたら、その下から中身(紙)が現れる
+                background:
+                  showPages
+                    ? "#f7f3ea"
+                    : "linear-gradient(140deg, #1d2b3a 0%, #16212e 50%, #101823 100%)",
               }}
             >
-              {/* 表紙(閉じている状態) */}
-              {!opened && (
-                  <div
-                    className="absolute inset-0 z-20 flex flex-col items-center justify-center px-8 text-center"
-                    style={{ animation: "page-in 1.4s ease-in-out both" }}
-                  >
+              {/* 表紙: 本物の本のように左綴じで開く/閉じる */}
+              {showCover && (
+                <div
+                  className="absolute inset-0 z-20 origin-left overflow-hidden rounded-r-xl rounded-l-md"
+                  style={{
+                    transformStyle: "preserve-3d",
+                    backfaceVisibility: "hidden",
+                    background:
+                      "linear-gradient(140deg, #1d2b3a 0%, #16212e 50%, #101823 100%)",
+                    boxShadow: "8px 0 30px rgba(0,0,0,0.45)",
+                    // 開く時は 0°→-172°、閉じる時は -172°→0°
+                    animation:
+                      stage === "closing"
+                        ? `cover-close ${COVER_MS}ms cubic-bezier(0.42,0,0.3,1) both`
+                        : coverOpening
+                          ? `cover-open ${COVER_MS}ms cubic-bezier(0.42,0,0.3,1) both`
+                          : undefined,
+                  }}
+                >
+                  <div className="flex h-full w-full flex-col items-center justify-center px-8 text-center">
                     <div className="absolute inset-3 rounded-r-lg rounded-l-sm border border-gold/35" />
                     <span aria-hidden className="text-gold/90">
                       ✦
@@ -218,11 +257,21 @@ export default function EndingShow({
                       ✦
                     </span>
                   </div>
-                )}
+                  {/* 綴じ側の陰影(紙の立体感) */}
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-y-0 left-0 w-10"
+                    style={{
+                      background:
+                        "linear-gradient(90deg, rgba(0,0,0,0.45), transparent)",
+                    }}
+                  />
+                </div>
+              )}
 
-              {/* 中身のページ(開いている時) */}
-              {opened && (
-                <div className="absolute inset-0 bg-[#f7f3ea]">
+              {/* 中身のページ(表紙をめくり始めた時から見えている) */}
+              {showPages && (
+                <div className="absolute inset-0 overflow-hidden rounded-r-xl rounded-l-md bg-[#f7f3ea]">
                   <div
                     key={page}
                     className="absolute inset-0 transition-opacity duration-700"
@@ -251,13 +300,7 @@ export default function EndingShow({
 
                   {/* めくられる紙: 表面に「めくる前のページ」を乗せたまま回転する */}
                   {flipping && flippingFrom !== null && (
-                    <motion.div
-                      initial={{ rotateY: 0 }}
-                      animate={{ rotateY: -172 }}
-                      transition={{
-                        duration: FLIP_MS / 1000,
-                        ease: [0.42, 0, 0.35, 1],
-                      }}
+                    <div
                       className="absolute inset-0 z-30 origin-left overflow-hidden"
                       style={{
                         transformStyle: "preserve-3d",
@@ -265,6 +308,7 @@ export default function EndingShow({
                         background: "#f7f3ea",
                         boxShadow: "6px 0 24px rgba(0,0,0,0.28)",
                         borderRadius: "0 10px 10px 0",
+                        animation: `page-flip ${FLIP_MS}ms cubic-bezier(0.42,0,0.35,1) both`,
                       }}
                     >
                       {/* 紙の表面にめくる前のページを描く */}
@@ -296,7 +340,7 @@ export default function EndingShow({
                             "linear-gradient(90deg, rgba(0,0,0,0.18), transparent)",
                         }}
                       />
-                    </motion.div>
+                    </div>
                   )}
                 </div>
               )}
