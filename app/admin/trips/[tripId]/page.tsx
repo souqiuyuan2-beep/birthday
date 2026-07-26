@@ -16,6 +16,7 @@ export default function TripEditPage() {
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [bgmBusy, setBgmBusy] = useState<"opening" | "ending" | null>(null);
+  const [resetDone, setResetDone] = useState(false);
 
   const load = useCallback(async () => {
     const res = await adminFetch(`/api/admin/trips/${tripId}`);
@@ -47,6 +48,27 @@ export default function TripEditPage() {
       }),
     });
     if (res.ok) setSaved(true);
+    setBusy(false);
+  }
+
+  async function resetProgress(keepPhotos: boolean) {
+    const warn = keepPhotos
+      ? "達成状況と選んだ行き先をリセットします(写真は残ります)。よろしいですか?"
+      : "達成状況・選んだ行き先・写真をすべて消します。元に戻せません。よろしいですか?";
+    if (!confirm(warn)) return;
+    setBusy(true);
+    setResetDone(false);
+    const res = await adminFetch(`/api/admin/trips/${tripId}/reset`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ keepPhotos }),
+    });
+    if (res.ok) {
+      setResetDone(true);
+      setTimeout(() => setResetDone(false), 3000);
+    } else {
+      alert("リセットできませんでした");
+    }
     setBusy(false);
   }
 
@@ -207,6 +229,34 @@ export default function TripEditPage() {
           );
         })}
       </div>
+
+      {/* リハーサル後に本番状態へ戻すためのリセット */}
+      <section className="mt-10 rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+        <p className="text-sm font-medium text-amber-800">進捗のリセット</p>
+        <p className="mt-1 text-xs leading-relaxed text-amber-700/80">
+          リハーサルで付いた達成状況・選んだ行き先を消して、まっさらな状態に戻します。
+          プラン(スポットや手紙)は消えません。
+        </p>
+        <div className="mt-3 flex gap-2">
+          <button
+            onClick={() => resetProgress(false)}
+            disabled={busy}
+            className="rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs font-medium text-amber-800 disabled:opacity-40"
+          >
+            写真も全部消す
+          </button>
+          <button
+            onClick={() => resetProgress(true)}
+            disabled={busy}
+            className="rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs font-medium text-amber-800 disabled:opacity-40"
+          >
+            写真は残す
+          </button>
+        </div>
+        {resetDone && (
+          <p className="mt-2 text-xs text-amber-800">リセットしました</p>
+        )}
+      </section>
 
       <div className="sticky bottom-4 mt-8">
         <button

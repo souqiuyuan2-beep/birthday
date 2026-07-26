@@ -1,10 +1,13 @@
 // アルバムの写真グリッド+タップ拡大+ページめくりモード(クライアント側)
 // - 一覧: 3列グリッド(遅延読み込み)。タップでオーバーレイ拡大、左右タップで前後移動
 // - ページ: 本のように1枚ずつ横スワイプでめくって見るモード(scroll-snap)
+// - 拡大表示から写真を削除できる(達成状態はそのまま)
 "use client";
 
 import { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
+import { getTripToken } from "@/lib/auth-client";
 
 type Item = {
   id: string;
@@ -14,9 +17,30 @@ type Item = {
 };
 
 export default function PhotoGrid({ items }: { items: Item[] }) {
+  const { slug } = useParams<{ slug: string }>();
+  const router = useRouter();
+  const [photos, setPhotos] = useState<Item[]>(items);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [mode, setMode] = useState<"grid" | "book">("grid");
-  const open = openIndex !== null ? items[openIndex] : null;
+  const open = openIndex !== null ? photos[openIndex] : null;
+
+  // 拡大表示から写真を削除する(達成状態は変わらない)
+  async function deletePhoto(photo: Item) {
+    if (!confirm("この写真を削除する?")) return;
+    const token = getTripToken(slug);
+    if (!token) return;
+    const res = await fetch(`/api/t/${slug}/photos/${photo.id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      setPhotos((list) => list.filter((p) => p.id !== photo.id));
+      setOpenIndex(null);
+      router.refresh();
+    } else {
+      alert("削除できませんでした");
+    }
+  }
 
   return (
     <>
@@ -44,7 +68,7 @@ export default function PhotoGrid({ items }: { items: Item[] }) {
 
       {mode === "grid" ? (
         <div className="grid grid-cols-3 gap-2">
-          {items.map((item, i) => (
+          {photos.map((item, i) => (
             <button key={item.id} onClick={() => setOpenIndex(i)}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -58,7 +82,7 @@ export default function PhotoGrid({ items }: { items: Item[] }) {
         </div>
       ) : (
         <div className="-mx-6 flex snap-x snap-mandatory gap-5 overflow-x-auto px-6 pb-4">
-          {items.map((item) => (
+          {photos.map((item) => (
             <figure key={item.id} className="w-full shrink-0 snap-center">
               <div className="rounded-2xl border border-neutral-200 bg-white p-3 pb-4 shadow-md">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -103,6 +127,15 @@ export default function PhotoGrid({ items }: { items: Item[] }) {
                 {new Date(open.createdAt).toLocaleDateString("ja-JP")}
               </span>
             </p>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                void deletePhoto(open);
+              }}
+              className="mt-5 rounded-full border border-white/25 px-5 py-2 text-xs text-white/60"
+            >
+              この写真を削除
+            </button>
 
             {/* 左右タップで前後移動(画像タップの閉じる操作と領域を分ける) */}
             {openIndex > 0 && (
@@ -115,7 +148,7 @@ export default function PhotoGrid({ items }: { items: Item[] }) {
                 aria-label="前の写真"
               />
             )}
-            {openIndex < items.length - 1 && (
+            {openIndex < photos.length - 1 && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
