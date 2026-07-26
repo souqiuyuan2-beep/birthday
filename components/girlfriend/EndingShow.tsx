@@ -42,6 +42,8 @@ export default function EndingShow({
   const [flipping, setFlipping] = useState(false);
   // ページ内容のフェードイン(ページが変わるたびに 0 → 1)
   const [pageVisible, setPageVisible] = useState(false);
+  // めくられていく紙の表面に描く「1つ前のページ」
+  const [flippingFrom, setFlippingFrom] = useState<number | null>(null);
 
   const lastPage = photos.length; // 特別ページのindex
   const isFinale = page >= lastPage;
@@ -70,7 +72,9 @@ export default function EndingShow({
     setTimeout(() => setStage("book"), 2600);
   }
 
-  // 次のページへ(めくり演出を挟む)
+  // 次のページへ
+  // いま見えているページを「紙ごと」めくる: めくる紙の表面に現在ページを描画したまま
+  // 回転させ、その下から次のページが現れる(前の写真が残って見えないように)
   const turnPage = useCallback(() => {
     if (flipping) return;
     if (page >= lastPage) {
@@ -78,14 +82,18 @@ export default function EndingShow({
       setStage("closing");
       return;
     }
+    // 下地を先に次ページへ差し替え、その上を「今見ていたページ」の紙が覆ってめくられる
+    setFlippingFrom(page);
+    setPage((p) => p + 1);
     setFlipping(true);
     setTimeout(() => {
-      setPage((p) => p + 1);
       setFlipping(false);
+      setFlippingFrom(null);
     }, FLIP_MS);
   }, [flipping, page, lastPage]);
 
   // ページが変わったら、内容をやわらかくフェードインさせる
+  // (めくり中はめくる紙が覆っているので、その裏で静かに現れる)
   useEffect(() => {
     if (stage !== "book") return;
     setPageVisible(false);
@@ -96,10 +104,12 @@ export default function EndingShow({
   // 自動でページを進める
   useEffect(() => {
     if (stage !== "book") return;
-    const wait = isFinale ? PAGE_MS + 6000 : PAGE_MS; // 最後のページは長めに余韻
+    // 最後のページは、全部の行が出そろってから十分な余韻を置く
+    const finaleLines = paragraphs.length + 2; // 手紙 + 締めの2行
+    const wait = isFinale ? (3.4 + finaleLines * 2.4 + 5) * 1000 : PAGE_MS;
     const timer = setTimeout(turnPage, wait);
     return () => clearTimeout(timer);
-  }, [stage, page, isFinale, turnPage]);
+  }, [stage, page, isFinale, turnPage, paragraphs.length]);
 
   // 本を閉じたら、余韻を残してフェードアウト
   useEffect(() => {
@@ -239,34 +249,55 @@ export default function EndingShow({
                     }}
                   />
 
-                  {/* めくられる紙(紙の厚み・影) */}
-                  {flipping && (
-                      <motion.div
-                        initial={{ rotateY: 0 }}
-                        animate={{ rotateY: -172 }}
-                        transition={{
-                          duration: FLIP_MS / 1000,
-                          ease: [0.42, 0, 0.35, 1],
-                        }}
-                        className="absolute inset-0 z-30 origin-left"
+                  {/* めくられる紙: 表面に「めくる前のページ」を乗せたまま回転する */}
+                  {flipping && flippingFrom !== null && (
+                    <motion.div
+                      initial={{ rotateY: 0 }}
+                      animate={{ rotateY: -172 }}
+                      transition={{
+                        duration: FLIP_MS / 1000,
+                        ease: [0.42, 0, 0.35, 1],
+                      }}
+                      className="absolute inset-0 z-30 origin-left overflow-hidden"
+                      style={{
+                        transformStyle: "preserve-3d",
+                        backfaceVisibility: "hidden",
+                        background: "#f7f3ea",
+                        boxShadow: "6px 0 24px rgba(0,0,0,0.28)",
+                        borderRadius: "0 10px 10px 0",
+                      }}
+                    >
+                      {/* 紙の表面にめくる前のページを描く */}
+                      <div className="absolute inset-0">
+                        {flippingFrom >= photos.length ? (
+                          <FinalePage paragraphs={paragraphs} />
+                        ) : (
+                          <PhotoPage
+                            photo={photos[flippingFrom]}
+                            index={flippingFrom}
+                            total={photos.length}
+                          />
+                        )}
+                      </div>
+                      {/* 紙のツヤと綴じ側の影 */}
+                      <span
+                        aria-hidden
+                        className="pointer-events-none absolute inset-0"
                         style={{
-                          transformStyle: "preserve-3d",
                           background:
-                            "linear-gradient(100deg, #efe9dc 0%, #f7f3ea 45%, #e6dfd0 100%)",
-                          boxShadow: "6px 0 24px rgba(0,0,0,0.28)",
-                          borderRadius: "0 10px 10px 0",
+                            "linear-gradient(100deg, rgba(0,0,0,0.10) 0%, rgba(255,255,255,0.16) 45%, rgba(0,0,0,0.08) 100%)",
                         }}
-                      >
-                        <span
-                          aria-hidden
-                          className="absolute inset-y-0 left-0 w-8"
-                          style={{
-                            background:
-                              "linear-gradient(90deg, rgba(0,0,0,0.16), transparent)",
-                          }}
-                        />
-                      </motion.div>
-                    )}
+                      />
+                      <span
+                        aria-hidden
+                        className="pointer-events-none absolute inset-y-0 left-0 w-8"
+                        style={{
+                          background:
+                            "linear-gradient(90deg, rgba(0,0,0,0.18), transparent)",
+                        }}
+                      />
+                    </motion.div>
+                  )}
                 </div>
               )}
 
@@ -396,14 +427,12 @@ function PhotoPage({
 
 // 最後の特別なページ
 function FinalePage({ paragraphs }: { paragraphs: string[] }) {
-  // 管理画面のエンディングの手紙があればそれを、無ければ既定のメッセージ
-  const lines =
-    paragraphs.length > 0
-      ? paragraphs
-      : [
-          "今日は一緒に最高の思い出を作ってくれてありがとう。",
-          "これからもたくさん思い出を作ろうね。",
-        ];
+  // 締めの2行は必ず表示し、管理画面の手紙があればその前に添える
+  const lines = [
+    ...paragraphs,
+    "今日は一緒に最高の思い出を作ってくれてありがとう。",
+    "これからもたくさん思い出を作ろうね。",
+  ];
 
   return (
     <div className="flex h-full w-full flex-col items-center justify-center px-10 text-center text-neutral-800">

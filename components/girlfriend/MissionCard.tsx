@@ -23,6 +23,7 @@ type Props = {
   done: boolean;
   initialPhotos: PhotoItem[];
   reselectOrder: number | null; // 多択で写真前なら選び直しリンクを出す番目
+  photoRequired: boolean; // false なら写真なしでも達成にできる
 };
 
 type UploadState =
@@ -40,6 +41,7 @@ export default function MissionCard({
   done,
   initialPhotos,
   reselectOrder,
+  photoRequired,
 }: Props) {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
@@ -104,9 +106,32 @@ export default function MissionCard({
     router.refresh();
   }
 
+  // 写真が任意のスポットを、写真なしで達成にする
+  async function completeWithoutPhoto() {
+    if (busy) return;
+    const token = getTripToken(slug);
+    if (!token) {
+      router.replace("/");
+      return;
+    }
+    const res = await fetch(`/api/t/${slug}/complete`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ spotId }),
+    });
+    if (res.ok) {
+      setIsDone(true);
+      setCelebrating(true);
+      router.refresh();
+    }
+  }
+
   async function deletePhoto(photo: PhotoItem) {
     const warn =
-      photos.length === 1
+      photos.length === 1 && photoRequired
         ? "これが最後の1枚だよ。削除するとこのスポットの写真が0枚になるけど、本当に削除する?"
         : "この写真を削除する?";
     if (!confirm(warn)) return;
@@ -268,10 +293,25 @@ export default function MissionCard({
             e.target.value = "";
           }}
         />
+        {/* 写真が必須でないスポットは、写真なしでも次へ進める */}
+        {!photoRequired && !isDone && (
+          <button
+            onClick={completeWithoutPhoto}
+            disabled={busy}
+            className="mb-3 w-full rounded-2xl bg-theme py-4 text-base font-medium text-white shadow-md transition-all active:scale-[0.98] disabled:opacity-40"
+          >
+            ここに来た!
+          </button>
+        )}
         <button
           onClick={() => cameraInputRef.current?.click()}
           disabled={busy}
-          className="w-full rounded-2xl bg-theme py-4 text-base font-medium text-white shadow-md transition-all active:scale-[0.98] disabled:opacity-40"
+          className={
+            "w-full rounded-2xl py-4 text-base font-medium transition-all active:scale-[0.98] disabled:opacity-40 " +
+            (!photoRequired && !isDone
+              ? "border-2 border-theme bg-white text-theme-deep"
+              : "bg-theme text-white shadow-md")
+          }
         >
           {isDone ? "写真を撮って追加する" : "写真を撮る"}
         </button>
@@ -282,6 +322,11 @@ export default function MissionCard({
         >
           フォルダから選ぶ
         </button>
+        {!photoRequired && !isDone && (
+          <p className="mt-3 text-center text-xs text-neutral-400">
+            写真は撮らなくても大丈夫
+          </p>
+        )}
       </div>
 
       {celebrating && (

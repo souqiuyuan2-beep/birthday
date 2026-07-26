@@ -24,6 +24,7 @@ export type Spot = {
   hint: string | null;
   message: string | null;
   chosen: boolean; // 2択グループ(同じsort_order)の中で彼女が選んだ方
+  photo_required: boolean; // false なら写真なしでも達成にできる
 };
 
 export type Progress = {

@@ -52,6 +52,7 @@ export async function POST(
         mission: s.mission,
         hint: s.hint,
         message: s.message,
+        photo_required: s.photo_required,
       }))
     );
     if (spotError) {

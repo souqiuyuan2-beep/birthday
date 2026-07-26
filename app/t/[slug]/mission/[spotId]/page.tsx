@@ -89,6 +89,7 @@ export default async function MissionPage({
       done={done}
       initialPhotos={initialPhotos}
       reselectOrder={reselectOrder}
+      photoRequired={spot.photo_required}
     />
   );
 }

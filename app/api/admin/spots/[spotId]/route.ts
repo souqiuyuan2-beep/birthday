@@ -5,7 +5,14 @@ import { isAdminRequest } from "@/lib/admin-api";
 
 type Ctx = { params: Promise<{ spotId: string }> };
 
-const EDITABLE = ["name", "reveal_name", "mission", "hint", "message"] as const;
+const EDITABLE = [
+  "name",
+  "reveal_name",
+  "mission",
+  "hint",
+  "message",
+  "photo_required",
+] as const;
 
 export async function PATCH(req: Request, { params }: Ctx) {
   if (!isAdminRequest(req)) {

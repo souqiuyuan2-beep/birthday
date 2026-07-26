@@ -88,6 +88,7 @@ export default function SpotsEditPage() {
         mission: spot.mission,
         hint: spot.hint || null,
         message: spot.message || null,
+        photo_required: spot.photo_required,
       }),
     });
     if (res.ok) {
@@ -229,6 +230,19 @@ export default function SpotsEditPage() {
                             }
                           />
                           スポット名を事前に見せる
+                        </label>
+                        <label className="flex items-center gap-2 text-sm text-neutral-600">
+                          <input
+                            type="checkbox"
+                            checked={spot.photo_required}
+                            onChange={(e) =>
+                              setField(spot.id, "photo_required", e.target.checked)
+                            }
+                          />
+                          写真の追加を必須にする
+                          <span className="text-xs text-neutral-400">
+                            (外すと写真なしでも次へ進める)
+                          </span>
                         </label>
                         <textarea
                           className={inputCls}
