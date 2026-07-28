@@ -79,6 +79,17 @@ export default async function MissionPage({
   // 写真をアップするまでは選び直せる(達成したら確定)
   const reselectOrder = isChosenFromChoice && !done ? group.sortOrder : null;
 
+  // 達成演出から「次のミッション」へ直接行けるようにする
+  // 次のグループが多択で未選択なら選択画面へ、決まっていればそのミッションへ。
+  // 最後のグループだった場合は、全部終わったのでエンディングへ。
+  const nextGroup = groups[groupIndex + 1];
+  const nextHref = nextGroup
+    ? nextGroup.effective
+      ? `/t/${slug}/mission/${nextGroup.effective.id}`
+      : `/t/${slug}/choice/${nextGroup.sortOrder}`
+    : `/t/${slug}/ending`;
+  const nextLabel = nextGroup ? "次のミッションへ" : "旅の思い出をひらく";
+
   return (
     <MissionCard
       spotId={spot.id}
@@ -91,6 +102,8 @@ export default async function MissionPage({
       reselectOrder={reselectOrder}
       photoRequired={spot.photo_required}
       completeLabel={spot.complete_label?.trim() || "ここに来た!"}
+      nextHref={nextHref}
+      nextLabel={nextLabel}
     />
   );
 }

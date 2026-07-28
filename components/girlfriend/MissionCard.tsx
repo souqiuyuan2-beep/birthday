@@ -25,6 +25,8 @@ type Props = {
   reselectOrder: number | null; // 多択で写真前なら選び直しリンクを出す番目
   photoRequired: boolean; // false なら写真なしでも達成にできる
   completeLabel: string; // 写真なしで達成するボタンの文言
+  nextHref: string; // 達成演出から次へ進む先(最後ならエンディング)
+  nextLabel: string;
 };
 
 type UploadState =
@@ -44,6 +46,8 @@ export default function MissionCard({
   reselectOrder,
   photoRequired,
   completeLabel,
+  nextHref,
+  nextLabel,
 }: Props) {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
@@ -387,6 +391,20 @@ export default function MissionCard({
             className="mt-10 w-full rounded-2xl bg-theme py-4 text-base font-medium text-white shadow-md transition-transform active:scale-[0.98]"
           >
             ホームへ戻る
+          </motion.button>
+          {/* そのまま次へ進みたい時のショートカット */}
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.1 }}
+            onClick={() => {
+              // 直前の達成を反映してから進む(次が2択なら選択画面へ)
+              router.refresh();
+              router.push(nextHref);
+            }}
+            className="mt-3 w-full rounded-2xl border-2 border-theme bg-white py-3.5 text-base font-medium text-theme-deep transition-transform active:scale-[0.98]"
+          >
+            {nextLabel}
           </motion.button>
         </motion.div>
       )}
