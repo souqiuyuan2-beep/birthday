@@ -89,6 +89,7 @@ export default function SpotsEditPage() {
         hint: spot.hint || null,
         message: spot.message || null,
         photo_required: spot.photo_required,
+        complete_label: spot.complete_label || null,
       }),
     });
     if (res.ok) {
@@ -244,6 +245,17 @@ export default function SpotsEditPage() {
                             (外すと写真なしでも次へ進める)
                           </span>
                         </label>
+                        {/* 写真不要のときだけ、達成ボタンの文言を自由に決められる */}
+                        {!spot.photo_required && (
+                          <input
+                            className={inputCls}
+                            placeholder="達成ボタンの文言(既定: ここに来た!)"
+                            value={spot.complete_label ?? ""}
+                            onChange={(e) =>
+                              setField(spot.id, "complete_label", e.target.value)
+                            }
+                          />
+                        )}
                         <textarea
                           className={inputCls}
                           rows={2}

@@ -25,6 +25,7 @@ export type Spot = {
   message: string | null;
   chosen: boolean; // 2択グループ(同じsort_order)の中で彼女が選んだ方
   photo_required: boolean; // false なら写真なしでも達成にできる
+  complete_label: string | null; // 写真不要時の達成ボタンの文言(空なら「ここに来た!」)
 };
 
 export type Progress = {

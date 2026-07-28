@@ -53,6 +53,7 @@ export async function POST(
         hint: s.hint,
         message: s.message,
         photo_required: s.photo_required,
+        complete_label: s.complete_label,
       }))
     );
     if (spotError) {

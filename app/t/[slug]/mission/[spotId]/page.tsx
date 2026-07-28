@@ -90,6 +90,7 @@ export default async function MissionPage({
       initialPhotos={initialPhotos}
       reselectOrder={reselectOrder}
       photoRequired={spot.photo_required}
+      completeLabel={spot.complete_label?.trim() || "ここに来た!"}
     />
   );
 }

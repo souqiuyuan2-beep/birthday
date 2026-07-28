@@ -24,6 +24,7 @@ type Props = {
   initialPhotos: PhotoItem[];
   reselectOrder: number | null; // 多択で写真前なら選び直しリンクを出す番目
   photoRequired: boolean; // false なら写真なしでも達成にできる
+  completeLabel: string; // 写真なしで達成するボタンの文言
 };
 
 type UploadState =
@@ -42,6 +43,7 @@ export default function MissionCard({
   initialPhotos,
   reselectOrder,
   photoRequired,
+  completeLabel,
 }: Props) {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
@@ -300,7 +302,7 @@ export default function MissionCard({
             disabled={busy}
             className="mb-3 w-full rounded-2xl bg-theme py-4 text-base font-medium text-white shadow-md transition-all active:scale-[0.98] disabled:opacity-40"
           >
-            ここに来た!
+            {completeLabel}
           </button>
         )}
         <button
@@ -324,7 +326,7 @@ export default function MissionCard({
         </button>
         {!photoRequired && !isDone && (
           <p className="mt-3 text-center text-xs text-neutral-400">
-            写真は撮らなくても大丈夫
+            写真は撮らなくても進めます
           </p>
         )}
       </div>
