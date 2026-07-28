@@ -10,6 +10,7 @@ import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { markOpeningSeen } from "@/lib/opening";
 import Sparkles from "@/components/girlfriend/Sparkles";
+import Handwriting from "@/components/girlfriend/Handwriting";
 
 type Stage = "sealed" | "opening" | "letter";
 
@@ -24,6 +25,8 @@ export default function OpeningLetter({
   const router = useRouter();
   const audioRef = useRef<HTMLAudioElement>(null);
   const [stage, setStage] = useState<Stage>("sealed");
+  // 何段落目まで書き終えたか(順に手書き表示していく)
+  const [writtenCount, setWrittenCount] = useState(0);
 
   const paragraphs = letter
     .split(/\n{2,}/)
@@ -145,30 +148,22 @@ export default function OpeningLetter({
           className="relative z-10 w-full"
         >
           <div className="rounded-2xl border border-neutral-200 bg-white/95 p-7 shadow-lg">
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={{
-                visible: { transition: { staggerChildren: 0.9, delayChildren: 0.4 } },
-              }}
-            >
-              {paragraphs.map((paragraph, i) => (
-                <motion.p
-                  key={i}
-                  variants={{
-                    hidden: { opacity: 0, y: 10 },
-                    visible: { opacity: 1, y: 0, transition: { duration: 0.9 } },
-                  }}
-                  className="whitespace-pre-wrap font-serif leading-loose text-neutral-800 [&:not(:first-child)]:mt-5"
-                >
-                  {paragraph}
-                </motion.p>
-              ))}
+            <div>
+              {/* 手で書いているように、段落を順に1文字ずつ綴っていく */}
+              {paragraphs.map((paragraph, i) =>
+                i <= writtenCount ? (
+                  <Handwriting
+                    key={i}
+                    text={paragraph}
+                    onDone={() => setWrittenCount((c) => Math.max(c, i + 1))}
+                    className="font-serif leading-loose text-neutral-800 [&:not(:first-child)]:mt-5"
+                  />
+                ) : null
+              )}
               <motion.div
-                variants={{
-                  hidden: { opacity: 0 },
-                  visible: { opacity: 1, transition: { duration: 1.2 } },
-                }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: writtenCount >= paragraphs.length ? 1 : 0 }}
+                transition={{ duration: 1.2 }}
                 className="mt-8"
               >
                 <button
@@ -178,7 +173,7 @@ export default function OpeningLetter({
                   旅を始める
                 </button>
               </motion.div>
-            </motion.div>
+            </div>
           </div>
         </motion.div>
       )}

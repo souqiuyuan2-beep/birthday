@@ -88,6 +88,17 @@ body {
   }
 }
 
+/* 手紙を書いているペン先の光 */
+@keyframes pen-blink {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
 /* エンディング: 表紙が左綴じで開く / 閉じる */
 @keyframes cover-open {
   from {

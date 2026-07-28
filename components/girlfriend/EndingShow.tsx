@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import Handwriting from "@/components/girlfriend/Handwriting";
 
 type EndingPhoto = { url: string; spotName: string; takenAt: string };
 
@@ -119,9 +120,13 @@ export default function EndingShow({
   // 自動でページを進める
   useEffect(() => {
     if (stage !== "book") return;
-    // 最後のページは、全部の行が出そろってから十分な余韻を置く
-    const finaleLines = paragraphs.length + 2; // 手紙 + 締めの2行
-    const wait = isFinale ? (3.4 + finaleLines * 2.4 + 5) * 1000 : PAGE_MS;
+    // 最後のページは、手書きが終わるまで待ってから余韻を置く
+    // (1文字約90ms + 句読点の間。おおよその総文字数から見積もる)
+    const finaleText =
+      paragraphs.join("") +
+      "今日は一緒に最高の思い出を作ってくれてありがとう。これからもたくさん思い出を作ろうね。";
+    const writingMs = 3400 + finaleText.length * 130;
+    const wait = isFinale ? writingMs + 6000 : PAGE_MS;
     const timer = setTimeout(turnPage, wait);
     return () => clearTimeout(timer);
   }, [stage, page, isFinale, turnPage, paragraphs.length]);
@@ -475,6 +480,8 @@ function FinalePage({ paragraphs }: { paragraphs: string[] }) {
     "今日は一緒に最高の思い出を作ってくれてありがとう。",
     "これからもたくさん思い出を作ろうね。",
   ];
+  // 何行目まで書き終えたか
+  const [writtenCount, setWrittenCount] = useState(0);
 
   return (
     <div className="flex h-full w-full flex-col items-center justify-center px-10 text-center text-neutral-800">
@@ -493,18 +500,18 @@ function FinalePage({ paragraphs }: { paragraphs: string[] }) {
         Happy Birthday
       </h2>
 
-      <div className="mt-9 space-y-4">
-        {lines.map((line, i) => (
-          <p
-            key={i}
-            className="font-serif text-[13px] leading-loose tracking-[0.08em] text-neutral-600"
-            style={{
-              animation: `page-in 2.4s ease-out ${3.4 + i * 2.4}s both`,
-            }}
-          >
-            {line}
-          </p>
-        ))}
+      {/* 手で書いているように1行ずつ綴られる */}
+      <div className="mt-9 w-full space-y-4">
+        {lines.map((line, i) =>
+          i <= writtenCount ? (
+            <Handwriting
+              key={i}
+              text={line}
+              onDone={() => setWrittenCount((c) => Math.max(c, i + 1))}
+              className="font-serif text-[13px] leading-loose tracking-[0.08em] text-neutral-600"
+            />
+          ) : null
+        )}
       </div>
 
       <div className="mt-10">
