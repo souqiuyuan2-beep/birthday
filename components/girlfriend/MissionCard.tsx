@@ -51,7 +51,6 @@ export default function MissionCard({
 }: Props) {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
-  const cameraInputRef = useRef<HTMLInputElement>(null);
   const libraryInputRef = useRef<HTMLInputElement>(null);
   const [photos, setPhotos] = useState<PhotoItem[]>(initialPhotos);
   const [isDone, setIsDone] = useState(done);
@@ -274,19 +273,7 @@ export default function MissionCard({
           </div>
         )}
 
-        {/* カメラ起動用(capture付き・1枚)とフォルダ選択用(複数枚可)で入力を分ける */}
-        <input
-          ref={cameraInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          className="hidden"
-          onChange={(e) => {
-            const files = e.target.files;
-            void handleFiles(files);
-            e.target.value = "";
-          }}
-        />
+        {/* capture を付けないことで、端末側で「カメラ / ライブラリ」を選べる */}
         <input
           ref={libraryInputRef}
           type="file"
@@ -309,30 +296,18 @@ export default function MissionCard({
             {completeLabel}
           </button>
         )}
-        {/* 達成前は「写真を撮る」を主役に。達成後は追加のみなので白ボタン1つに絞る */}
-        {!isDone && (
-          <button
-            onClick={() => cameraInputRef.current?.click()}
-            disabled={busy}
-            className={
-              "w-full rounded-2xl py-4 text-base font-medium transition-all active:scale-[0.98] disabled:opacity-40 " +
-              (!photoRequired
-                ? "border-2 border-theme bg-white text-theme-deep"
-                : "bg-theme text-white shadow-md")
-            }
-          >
-            写真を撮る
-          </button>
-        )}
+        {/* 写真の追加はボタン1つに統合。押すとカメラ/フォルダを端末側で選べる */}
         <button
           onClick={() => libraryInputRef.current?.click()}
           disabled={busy}
           className={
-            "w-full rounded-2xl border-2 border-theme bg-white py-3.5 text-base font-medium text-theme-deep transition-all active:scale-[0.98] disabled:opacity-40 " +
-            (isDone ? "" : "mt-3")
+            "w-full rounded-2xl py-4 text-base font-medium transition-all active:scale-[0.98] disabled:opacity-40 " +
+            (isDone || !photoRequired
+              ? "border-2 border-theme bg-white text-theme-deep"
+              : "bg-theme text-white shadow-md")
           }
         >
-          {isDone ? "写真を追加する" : "フォルダから選ぶ"}
+          写真を追加する
         </button>
         {!photoRequired && !isDone && (
           <p className="mt-3 text-center text-xs text-neutral-400">
