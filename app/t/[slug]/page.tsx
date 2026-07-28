@@ -9,6 +9,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { buildSpotGroups, currentGroupIndex } from "@/lib/spot-groups";
 import LogoutLink from "@/components/girlfriend/LogoutLink";
 import Sparkles from "@/components/girlfriend/Sparkles";
+import HomePhotoAdd from "@/components/girlfriend/HomePhotoAdd";
 import type { Photo, Progress, Spot, Trip } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
@@ -210,6 +211,16 @@ export default async function HomePage({
           );
         })}
       </ol>
+
+      {/* 達成済み・挑戦中のスポットには、ホームからも写真を足せる */}
+      <HomePhotoAdd
+        targets={groups.flatMap((g, i) => {
+          const spot = g.effective;
+          if (!spot) return [];
+          if (!g.done && i !== currentIdx) return []; // まだ来ていない場所は出さない
+          return [{ id: spot.id, name: spot.name }];
+        })}
+      />
 
       {allDone && (
         <div className="relative z-10 mt-4 rounded-2xl border border-theme/60 bg-white/90 p-6 text-center shadow-md">

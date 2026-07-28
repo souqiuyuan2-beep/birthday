@@ -309,24 +309,30 @@ export default function MissionCard({
             {completeLabel}
           </button>
         )}
-        <button
-          onClick={() => cameraInputRef.current?.click()}
-          disabled={busy}
-          className={
-            "w-full rounded-2xl py-4 text-base font-medium transition-all active:scale-[0.98] disabled:opacity-40 " +
-            (!photoRequired && !isDone
-              ? "border-2 border-theme bg-white text-theme-deep"
-              : "bg-theme text-white shadow-md")
-          }
-        >
-          {isDone ? "写真を撮って追加する" : "写真を撮る"}
-        </button>
+        {/* 達成前は「写真を撮る」を主役に。達成後は追加のみなので白ボタン1つに絞る */}
+        {!isDone && (
+          <button
+            onClick={() => cameraInputRef.current?.click()}
+            disabled={busy}
+            className={
+              "w-full rounded-2xl py-4 text-base font-medium transition-all active:scale-[0.98] disabled:opacity-40 " +
+              (!photoRequired
+                ? "border-2 border-theme bg-white text-theme-deep"
+                : "bg-theme text-white shadow-md")
+            }
+          >
+            写真を撮る
+          </button>
+        )}
         <button
           onClick={() => libraryInputRef.current?.click()}
           disabled={busy}
-          className="mt-3 w-full rounded-2xl border-2 border-theme bg-white py-3.5 text-base font-medium text-theme-deep transition-all active:scale-[0.98] disabled:opacity-40"
+          className={
+            "w-full rounded-2xl border-2 border-theme bg-white py-3.5 text-base font-medium text-theme-deep transition-all active:scale-[0.98] disabled:opacity-40 " +
+            (isDone ? "" : "mt-3")
+          }
         >
-          フォルダから選ぶ
+          {isDone ? "写真を追加する" : "フォルダから選ぶ"}
         </button>
         {!photoRequired && !isDone && (
           <p className="mt-3 text-center text-xs text-neutral-400">
