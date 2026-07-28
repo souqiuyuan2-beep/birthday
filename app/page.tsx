@@ -4,6 +4,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { saveTripToken } from "@/lib/auth-client";
@@ -110,6 +111,14 @@ export default function EntryPage() {
             {busy ? "確かめています…" : "扉を開く"}
           </button>
         </motion.form>
+
+        {/* 管理者(自分)用の入口。彼女には気づかれにくいよう控えめに */}
+        <Link
+          href="/admin"
+          className="mt-10 text-[10px] tracking-widest text-neutral-300 transition-colors hover:text-neutral-400"
+        >
+          管理者ページ
+        </Link>
       </motion.div>
     </main>
   );

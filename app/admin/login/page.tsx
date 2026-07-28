@@ -3,6 +3,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { saveAdminToken } from "@/lib/admin-client";
 
@@ -58,6 +59,12 @@ export default function AdminLoginPage() {
           ログイン
         </button>
       </form>
+      <Link
+        href="/"
+        className="mt-8 text-center text-xs text-neutral-400 underline underline-offset-4"
+      >
+        利用者ページへ戻る
+      </Link>
     </main>
   );
 }

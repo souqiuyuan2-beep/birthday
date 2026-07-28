@@ -66,15 +66,23 @@ export default function AdminTripsPage() {
       </header>
 
       {trips !== null && (
-        <button
-          onClick={() => {
-            clearAdminToken();
-            router.replace("/admin/login");
-          }}
-          className="mb-4 text-xs text-neutral-400 underline underline-offset-4"
-        >
-          ログアウト
-        </button>
+        <div className="mb-4 flex items-center gap-4">
+          <button
+            onClick={() => {
+              clearAdminToken();
+              router.replace("/admin/login");
+            }}
+            className="text-xs text-neutral-400 underline underline-offset-4"
+          >
+            ログアウト
+          </button>
+          <Link
+            href="/"
+            className="text-xs text-neutral-400 underline underline-offset-4"
+          >
+            利用者ページへ
+          </Link>
+        </div>
       )}
 
       {trips === null ? (
