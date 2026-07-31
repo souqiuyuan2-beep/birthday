@@ -43,21 +43,43 @@ export async function POST(
   }
 
   if (spots?.length) {
-    const { error: spotError } = await supabase.from("spots").insert(
-      spots.map((s) => ({
-        trip_id: newTrip.id,
-        sort_order: s.sort_order,
-        name: s.name,
-        reveal_name: s.reveal_name,
-        mission: s.mission,
-        hint: s.hint,
-        message: s.message,
-        photo_required: s.photo_required,
-        complete_label: s.complete_label,
-      }))
-    );
+    // まず親子関係なしで複製し、そのあと分岐の親子を張り直す
+    const { data: created, error: spotError } = (await supabase
+      .from("spots")
+      .insert(
+        spots.map((s) => ({
+          trip_id: newTrip.id,
+          sort_order: s.sort_order,
+          name: s.name,
+          reveal_name: s.reveal_name,
+          mission: s.mission,
+          hint: s.hint,
+          message: s.message,
+          photo_required: s.photo_required,
+          complete_label: s.complete_label,
+        }))
+      )
+      .select()) as { data: Spot[] | null; error: { message: string } | null };
     if (spotError) {
       return NextResponse.json({ error: spotError.message }, { status: 500 });
+    }
+
+    // 元のスポットidと複製後のidを対応づける(同じ順で作られる前提)
+    const idMap = new Map<string, string>();
+    spots.forEach((s, i) => {
+      const c = created?.[i];
+      if (c) idMap.set(s.id, c.id);
+    });
+    for (const s of spots) {
+      if (!s.parent_spot_id) continue;
+      const newId = idMap.get(s.id);
+      const newParent = idMap.get(s.parent_spot_id);
+      if (newId && newParent) {
+        await supabase
+          .from("spots")
+          .update({ parent_spot_id: newParent })
+          .eq("id", newId);
+      }
     }
   }
   return NextResponse.json({ trip: newTrip });

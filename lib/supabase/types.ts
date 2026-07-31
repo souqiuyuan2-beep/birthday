@@ -26,6 +26,7 @@ export type Spot = {
   chosen: boolean; // 2択グループ(同じsort_order)の中で彼女が選んだ方
   photo_required: boolean; // false なら写真なしでも達成にできる
   complete_label: string | null; // 写真不要時の達成ボタンの文言(空なら「ここに来た!」)
+  parent_spot_id: string | null; // 入っていれば「親が選ばれた時だけ出る」分岐スポット
 };
 
 export type Progress = {

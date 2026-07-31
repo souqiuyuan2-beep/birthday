@@ -30,18 +30,26 @@ export default function SpotsEditPage() {
     void load();
   }, [load]);
 
-  // 同じ sort_order のスポットを「番目グループ」にまとめる
+  // 同じ sort_order + 同じ親 のスポットを「番目グループ」にまとめる。
+  // 分岐(親つき)は親ごとに別グループとして並べる
   const groups = useMemo(() => {
-    const byOrder = new Map<number, Spot[]>();
+    const byKey = new Map<string, Spot[]>();
     for (const s of spots ?? []) {
-      const list = byOrder.get(s.sort_order) ?? [];
+      const key = `${s.sort_order}:${s.parent_spot_id ?? ""}`;
+      const list = byKey.get(key) ?? [];
       list.push(s);
-      byOrder.set(s.sort_order, list);
+      byKey.set(key, list);
     }
-    return [...byOrder.entries()]
-      .sort((a, b) => a[0] - b[0])
-      .map(([, options]) => options);
+    return [...byKey.values()].sort(
+      (a, b) => a[0].sort_order - b[0].sort_order
+    );
   }, [spots]);
+
+  // 分岐の見出し用に、スポットidから名前を引けるようにする
+  const spotName = useMemo(
+    () => new Map((spots ?? []).map((s) => [s.id, s.name])),
+    [spots]
+  );
 
   function setField<K extends keyof Spot>(id: string, key: K, value: Spot[K]) {
     setSpots((list) =>
@@ -66,6 +74,22 @@ export default function SpotsEditPage() {
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       alert(data.error ?? "選択肢を追加できませんでした");
+    }
+    await load();
+    setBusy(false);
+  }
+
+  // このスポットが選ばれた時だけ出る「次の質問」を足す
+  async function addBranch(parentSpotId: string) {
+    setBusy(true);
+    const res = await adminFetch(`/api/admin/trips/${tripId}/spots`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ parentSpotId }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error ?? "分岐を追加できませんでした");
     }
     await load();
     setBusy(false);
@@ -167,7 +191,14 @@ export default function SpotsEditPage() {
               >
                 <div className="mb-2 flex items-center justify-between px-1">
                   <span className="text-sm font-semibold text-neutral-500">
-                    {gi + 1}番目
+                    {options[0].parent_spot_id ? (
+                      <span className="text-violet-700">
+                        ↳「{spotName.get(options[0].parent_spot_id) ?? "?"}
+                        」を選んだ時
+                      </span>
+                    ) : (
+                      `${gi + 1}番目`
+                    )}
                     {isPair && (
                       <span className="ml-2 rounded bg-sky-100 px-1.5 py-0.5 text-xs font-medium text-sky-700">
                         {options.length}択{" "}
@@ -293,6 +324,17 @@ export default function SpotsEditPage() {
                           {savedId === spot.id ? "保存した!" : "保存"}
                         </button>
                       </div>
+
+                      {/* この選択肢を選んだ時だけ出る「次の質問」を作れる */}
+                      {isPair && (
+                        <button
+                          onClick={() => addBranch(spot.id)}
+                          disabled={busy}
+                          className="mt-2 w-full rounded-lg border border-dashed border-violet-300 py-2 text-xs text-violet-700 disabled:opacity-40"
+                        >
+                          ↳ これを選んだ時の質問を追加
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>

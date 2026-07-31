@@ -5,17 +5,80 @@ import { isAdminRequest } from "@/lib/admin-api";
 
 type Ctx = { params: Promise<{ tripId: string }> };
 
-// POST body(任意): { sortOrder } — 指定するとその番目の「選択肢」として追加(2択化)。
-// 未指定なら末尾に新しい番目として追加
+// POST body(任意):
+//   { sortOrder }     — その番目の「選択肢」として追加(多択化)
+//   { parentSpotId }  — 分岐スポットとして追加(親が選ばれた時だけ出る)。
+//                       親の次の番目に置かれる
+//   どちらも未指定なら末尾に新しい番目として追加
 export async function POST(req: Request, { params }: Ctx) {
   if (!isAdminRequest(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const { tripId } = await params;
-  const { sortOrder } = (await req.json().catch(() => ({}))) as {
+  const { sortOrder, parentSpotId } = (await req.json().catch(() => ({}))) as {
     sortOrder?: number;
+    parentSpotId?: string;
   };
   const supabase = createServerClient();
+
+  // 分岐スポットの追加: 親の次の番目に、親にぶら下げて置く
+  if (typeof parentSpotId === "string") {
+    const { data: parent } = await supabase
+      .from("spots")
+      .select("id, sort_order")
+      .eq("id", parentSpotId)
+      .eq("trip_id", tripId)
+      .single();
+    if (!parent) {
+      return NextResponse.json({ error: "parent not found" }, { status: 404 });
+    }
+    const branchOrder = parent.sort_order + 1;
+
+    // 同じ親の分岐が既に5つあるなら追加しない
+    const { data: siblings } = await supabase
+      .from("spots")
+      .select("id")
+      .eq("trip_id", tripId)
+      .eq("parent_spot_id", parentSpotId);
+    if ((siblings ?? []).length >= 5) {
+      return NextResponse.json(
+        { error: "分岐の選択肢は最大5個までです" },
+        { status: 409 }
+      );
+    }
+
+    // 分岐を差し込むぶん、後ろの番目を1つずつ後ろへずらす(初回のみ)
+    if ((siblings ?? []).length === 0) {
+      const { data: after } = await supabase
+        .from("spots")
+        .select("id, sort_order")
+        .eq("trip_id", tripId)
+        .gte("sort_order", branchOrder)
+        .order("sort_order", { ascending: false });
+      for (const s of after ?? []) {
+        await supabase
+          .from("spots")
+          .update({ sort_order: s.sort_order + 1 })
+          .eq("id", s.id);
+      }
+    }
+
+    const { data: spot, error } = await supabase
+      .from("spots")
+      .insert({
+        trip_id: tripId,
+        sort_order: branchOrder,
+        parent_spot_id: parentSpotId,
+        name: "新しいスポット",
+        mission: "",
+      })
+      .select()
+      .single();
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json({ spot });
+  }
 
   let order: number;
   if (typeof sortOrder === "number") {

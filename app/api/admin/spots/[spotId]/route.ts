@@ -13,6 +13,7 @@ const EDITABLE = [
   "message",
   "photo_required",
   "complete_label",
+  "parent_spot_id",
 ] as const;
 
 export async function PATCH(req: Request, { params }: Ctx) {

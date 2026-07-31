@@ -65,5 +65,33 @@ export async function POST(
     .eq("id", spot.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  // 選び直した場合、前に選んでいた側にぶら下がる分岐先の選択は無効にする
+  // (熱海→美術館 と選んだあと千葉に変えたら、美術館の選択は消す)
+  const otherIds = optionIds.filter((id) => id !== spot.id);
+  if (otherIds.length > 0) {
+    await clearDescendantChoices(supabase, trip.id, otherIds);
+  }
+
   return NextResponse.json({ ok: true, spotId: spot.id });
+}
+
+// 指定スポットにぶら下がる分岐先(孫以降も含む)の chosen を解除する
+async function clearDescendantChoices(
+  supabase: ReturnType<typeof createServerClient>,
+  tripId: string,
+  parentIds: string[]
+) {
+  let frontier = parentIds;
+  // 深い入れ子でも辿れるように、見つからなくなるまで下る
+  for (let depth = 0; depth < 5 && frontier.length > 0; depth++) {
+    const { data: children } = (await supabase
+      .from("spots")
+      .select("id")
+      .eq("trip_id", tripId)
+      .in("parent_spot_id", frontier)) as { data: Pick<Spot, "id">[] | null };
+    const childIds = (children ?? []).map((c) => c.id);
+    if (childIds.length === 0) break;
+    await supabase.from("spots").update({ chosen: false }).in("id", childIds);
+    frontier = childIds;
+  }
 }
