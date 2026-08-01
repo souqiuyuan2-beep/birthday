@@ -81,15 +81,20 @@ export async function POST(req: Request, { params }: Ctx) {
   }
 
   let order: number;
+  // 分岐グループ(親つき)に選択肢を足す場合は、同じ親を引き継ぐ
+  let inheritedParent: string | null = null;
   if (typeof sortOrder === "number") {
     order = sortOrder;
     // 進行が始まった番目には選択肢を追加できない(彼女が選べず詰むため)
     const { data: groupSpots } = await supabase
       .from("spots")
-      .select("id")
+      .select("id, parent_spot_id")
       .eq("trip_id", tripId)
       .eq("sort_order", order);
     const ids = (groupSpots ?? []).map((s) => s.id);
+    // 同じ番目に親つきスポットがあれば、その親にぶら下げる
+    inheritedParent =
+      (groupSpots ?? []).find((s) => s.parent_spot_id)?.parent_spot_id ?? null;
     if (ids.length >= 5) {
       return NextResponse.json(
         { error: "選択肢は1つの番目につき最大5個までです" },
@@ -130,6 +135,7 @@ export async function POST(req: Request, { params }: Ctx) {
     .insert({
       trip_id: tripId,
       sort_order: order,
+      parent_spot_id: inheritedParent, // 分岐グループなら同じ親にぶら下げる
       name: "新しいスポット",
       mission: "",
     })
