@@ -21,6 +21,8 @@ export default function SpotsEditPage() {
   // ドロワーの開閉と、いま編集している旅行先(null = 旅全体)
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [viewSpotId, setViewSpotId] = useState<string | null>(null);
+  // 開いて編集中のスポット。普段は一覧をコンパクトに見せ、必要な1件だけ開く
+  const [openSpotId, setOpenSpotId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const res = await adminFetch(`/api/admin/trips/${tripId}`);
@@ -211,10 +213,9 @@ export default function SpotsEditPage() {
           {/* 旅行先の切り替え(ドロワー) */}
           <button
             onClick={() => setDrawerOpen(true)}
-            className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
-            aria-label="旅行先を切り替える"
+            className="flex items-center gap-1.5 rounded-lg border border-neutral-300 px-3 py-2 text-sm"
           >
-            ☰
+            ☰ <span className="text-xs">切替</span>
           </button>
           <Link
             href={`/admin/trips/${tripId}`}
@@ -388,52 +389,73 @@ export default function SpotsEditPage() {
                   {options.map((spot, oi) => (
                     <div
                       key={spot.id}
-                      className="rounded-xl border border-neutral-200 bg-white p-4"
+                      className="overflow-hidden rounded-xl border border-neutral-200 bg-white"
                     >
-                      <div className="mb-2 flex items-center gap-2 text-xs font-medium text-neutral-400">
-                        {isPair && <span>選択肢{String.fromCharCode(65 + oi)}</span>}
+                      {/* 見出し行。タップで詳細を開閉する(普段は畳んで一覧を見やすく) */}
+                      <button
+                        onClick={() =>
+                          setOpenSpotId((id) => (id === spot.id ? null : spot.id))
+                        }
+                        className="flex w-full items-center gap-2 px-4 py-3 text-left"
+                      >
+                        <span className="text-xs text-neutral-400">
+                          {openSpotId === spot.id ? "▾" : "▸"}
+                        </span>
+                        {isPair && (
+                          <span className="text-xs font-medium text-neutral-400">
+                            {String.fromCharCode(65 + oi)}
+                          </span>
+                        )}
+                        <span className="min-w-0 flex-1 truncate text-sm font-medium text-neutral-800">
+                          {spot.name || "(名前なし)"}
+                        </span>
                         {doneIds.has(spot.id) && (
-                          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-700">
+                          <span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">
                             達成済み
                           </span>
                         )}
                         {isPair && spot.chosen && (
-                          <span className="rounded bg-sky-100 px-1.5 py-0.5 text-sky-700">
-                            彼女が選択
+                          <span className="shrink-0 rounded bg-sky-100 px-1.5 py-0.5 text-xs text-sky-700">
+                            選択中
                           </span>
                         )}
-                      </div>
+                        {spot.is_destination && (
+                          <span className="shrink-0 rounded bg-violet-100 px-1.5 py-0.5 text-xs text-violet-700">
+                            旅行先
+                          </span>
+                        )}
+                      </button>
 
-                      <div className="space-y-2.5">
+                      {openSpotId === spot.id && (
+                      <div className="space-y-2.5 border-t border-neutral-100 p-4">
                         <input
                           className={inputCls}
                           placeholder="スポット名"
                           value={spot.name}
                           onChange={(e) => setField(spot.id, "name", e.target.value)}
                         />
-                        <label className="flex items-center gap-2 text-sm text-neutral-600">
-                          <input
-                            type="checkbox"
-                            checked={spot.reveal_name}
-                            onChange={(e) =>
-                              setField(spot.id, "reveal_name", e.target.checked)
-                            }
-                          />
-                          スポット名を事前に見せる
-                        </label>
-                        <label className="flex items-center gap-2 text-sm text-neutral-600">
-                          <input
-                            type="checkbox"
-                            checked={spot.photo_required}
-                            onChange={(e) =>
-                              setField(spot.id, "photo_required", e.target.checked)
-                            }
-                          />
-                          写真の追加を必須にする
-                          <span className="text-xs text-neutral-400">
-                            (外すと写真なしでも次へ進める)
-                          </span>
-                        </label>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                          <label className="flex items-center gap-1.5 text-xs text-neutral-600">
+                            <input
+                              type="checkbox"
+                              checked={spot.reveal_name}
+                              onChange={(e) =>
+                                setField(spot.id, "reveal_name", e.target.checked)
+                              }
+                            />
+                            名前を先に見せる
+                          </label>
+                          <label className="flex items-center gap-1.5 text-xs text-neutral-600">
+                            <input
+                              type="checkbox"
+                              checked={spot.photo_required}
+                              onChange={(e) =>
+                                setField(spot.id, "photo_required", e.target.checked)
+                              }
+                            />
+                            写真を必須にする
+                          </label>
+                        </div>
                         {/* 写真不要のときだけ、達成ボタンの文言を自由に決められる */}
                         {!spot.photo_required && (
                           <input
@@ -464,34 +486,35 @@ export default function SpotsEditPage() {
                           value={spot.message ?? ""}
                           onChange={(e) => setField(spot.id, "message", e.target.value)}
                         />
-                      </div>
 
-                      <div className="mt-3 flex justify-between">
-                        <button
-                          onClick={() => deleteSpot(spot, isPair)}
-                          disabled={busy}
-                          className="text-xs text-red-500"
-                        >
-                          削除
-                        </button>
-                        <button
-                          onClick={() => saveSpot(spot)}
-                          disabled={busy}
-                          className="rounded-lg bg-neutral-800 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-40"
-                        >
-                          {savedId === spot.id ? "保存した!" : "保存"}
-                        </button>
-                      </div>
+                        <div className="flex justify-between pt-1">
+                          <button
+                            onClick={() => deleteSpot(spot, isPair)}
+                            disabled={busy}
+                            className="text-xs text-red-500"
+                          >
+                            削除
+                          </button>
+                          <button
+                            onClick={() => saveSpot(spot)}
+                            disabled={busy}
+                            className="rounded-lg bg-neutral-800 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+                          >
+                            {savedId === spot.id ? "保存した!" : "保存"}
+                          </button>
+                        </div>
 
-                      {/* 旅行先の選択肢には、その行き先だけの分岐を足せる */}
-                      {spot.is_destination && (
-                        <button
-                          onClick={() => addBranch(spot.id)}
-                          disabled={busy}
-                          className="mt-2 w-full rounded-lg border border-dashed border-violet-300 py-2 text-xs text-violet-700 disabled:opacity-40"
-                        >
-                          ↳「{spot.name}」を選んだ時の質問を追加
-                        </button>
+                        {/* 旅行先の選択肢には、その行き先だけの分岐を足せる */}
+                        {spot.is_destination && (
+                          <button
+                            onClick={() => addBranch(spot.id)}
+                            disabled={busy}
+                            className="w-full rounded-lg border border-dashed border-violet-300 py-2 text-xs text-violet-700 disabled:opacity-40"
+                          >
+                            ↳「{spot.name}」を選んだ時の質問を追加
+                          </button>
+                        )}
+                      </div>
                       )}
                     </div>
                   ))}
