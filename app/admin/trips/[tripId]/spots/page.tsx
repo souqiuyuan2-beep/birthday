@@ -1,6 +1,8 @@
 // A4: スポット・ミッション編集
 // - 追加・編集・削除・並び替え(上下ボタン、番目グループ単位)。sort_order を更新
 // - 「選択肢を追加」で同じ番目に2つ目のスポット → 彼女がどちらか選ぶ2択になる
+// - 番目グループに「旅行先」チェックを付けると、その選択肢がドロワーに並び、
+//   旅行先ごとの分岐スポットだけを集めて編集できる(複数の行き先でも見やすい)
 // - 保存すると彼女側に即反映。達成済みスポットの編集は警告を表示
 "use client";
 
@@ -16,6 +18,9 @@ export default function SpotsEditPage() {
   const [doneIds, setDoneIds] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(null);
+  // ドロワーの開閉と、いま編集している旅行先(null = 旅全体)
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [viewSpotId, setViewSpotId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const res = await adminFetch(`/api/admin/trips/${tripId}`);
@@ -51,6 +56,29 @@ export default function SpotsEditPage() {
     [spots]
   );
 
+  // 「旅行先」チェックが付いたグループの選択肢 = ドロワーに並ぶ行き先
+  const destinations = useMemo(
+    () => (spots ?? []).filter((s) => s.is_destination),
+    [spots]
+  );
+
+  // 表示するグループ:
+  //   旅全体ビュー → 分岐でないグループ(旅の骨格)
+  //   旅行先ビュー → その行き先にぶら下がる分岐だけ
+  const visibleGroups = useMemo(() => {
+    if (viewSpotId) {
+      return groups.filter((g) => g[0].parent_spot_id === viewSpotId);
+    }
+    return groups.filter((g) => !g[0].parent_spot_id);
+  }, [groups, viewSpotId]);
+
+  // 選択中の旅行先が消えたら旅全体ビューに戻す
+  useEffect(() => {
+    if (viewSpotId && !destinations.some((d) => d.id === viewSpotId)) {
+      setViewSpotId(null);
+    }
+  }, [viewSpotId, destinations]);
+
   function setField<K extends keyof Spot>(id: string, key: K, value: Spot[K]) {
     setSpots((list) =>
       (list ?? []).map((s) => (s.id === id ? { ...s, [key]: value } : s))
@@ -75,6 +103,19 @@ export default function SpotsEditPage() {
       const data = await res.json().catch(() => ({}));
       alert(data.error ?? "選択肢を追加できませんでした");
     }
+    await load();
+    setBusy(false);
+  }
+
+  // 番目グループを「旅行先を選ぶステップ」にする / 解除する
+  async function toggleDestination(sortOrder: number, isDestination: boolean) {
+    setBusy(true);
+    const res = await adminFetch(`/api/admin/trips/${tripId}/destination`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sortOrder, isDestination }),
+    });
+    if (!res.ok) alert("変更できませんでした");
     await load();
     setBusy(false);
   }
@@ -136,9 +177,13 @@ export default function SpotsEditPage() {
     setBusy(false);
   }
 
-  async function moveGroup(index: number, dir: -1 | 1) {
+  // 並び替えは全体の並び(groups)に対して行う。
+  // 画面には絞り込んだグループを出しているので、まず全体での位置に直す
+  async function moveGroup(visibleIndex: number, dir: -1 | 1) {
+    const target0 = visibleGroups[visibleIndex];
+    const index = groups.findIndex((g) => g[0].id === target0[0].id);
     const target = index + dir;
-    if (target < 0 || target >= groups.length) return;
+    if (index < 0 || target < 0 || target >= groups.length) return;
     const next = [...groups];
     [next[index], next[target]] = [next[target], next[index]];
     // 楽観的更新: sort_orderを振り直したspots配列を作る
@@ -157,12 +202,27 @@ export default function SpotsEditPage() {
   const inputCls =
     "w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-500";
 
+  const viewingName = viewSpotId ? spotName.get(viewSpotId) : null;
+
   return (
     <main className="mx-auto min-h-dvh max-w-md px-5 py-8">
-      <header className="mb-6 flex items-center justify-between">
-        <Link href={`/admin/trips/${tripId}`} className="text-sm text-neutral-400">
-          ← 旅行編集
-        </Link>
+      <header className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {/* 旅行先の切り替え(ドロワー) */}
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+            aria-label="旅行先を切り替える"
+          >
+            ☰
+          </button>
+          <Link
+            href={`/admin/trips/${tripId}`}
+            className="text-sm text-neutral-400"
+          >
+            ← 旅行編集
+          </Link>
+        </div>
         <button
           onClick={addGroup}
           disabled={busy}
@@ -172,13 +232,94 @@ export default function SpotsEditPage() {
         </button>
       </header>
 
+      {/* いまどこを編集しているか */}
+      <div className="mb-5 rounded-xl bg-neutral-100 px-4 py-2.5 text-sm">
+        {viewingName ? (
+          <span className="text-violet-700">
+            「{viewingName}」を選んだ時のスポット
+          </span>
+        ) : (
+          <span className="text-neutral-600">旅全体の流れ</span>
+        )}
+      </div>
+
+      {/* ドロワー */}
+      {drawerOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/30"
+          onClick={() => setDrawerOpen(false)}
+        >
+          <div
+            className="h-full w-72 overflow-y-auto bg-white p-5 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="mb-4 text-sm font-semibold text-neutral-700">
+              編集する場所
+            </p>
+            <button
+              onClick={() => {
+                setViewSpotId(null);
+                setDrawerOpen(false);
+              }}
+              className={
+                "mb-2 w-full rounded-lg px-3 py-2.5 text-left text-sm " +
+                (viewSpotId === null
+                  ? "bg-neutral-800 text-white"
+                  : "border border-neutral-200 text-neutral-700")
+              }
+            >
+              旅全体の流れ
+            </button>
+
+            {destinations.length > 0 && (
+              <>
+                <p className="mb-2 mt-5 text-xs text-neutral-400">
+                  旅行先ごとの分岐
+                </p>
+                <ul className="space-y-2">
+                  {destinations.map((d) => (
+                    <li key={d.id}>
+                      <button
+                        onClick={() => {
+                          setViewSpotId(d.id);
+                          setDrawerOpen(false);
+                        }}
+                        className={
+                          "w-full rounded-lg px-3 py-2.5 text-left text-sm " +
+                          (viewSpotId === d.id
+                            ? "bg-violet-600 text-white"
+                            : "border border-violet-200 text-violet-700")
+                        }
+                      >
+                        {d.name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+
+            {destinations.length === 0 && (
+              <p className="mt-5 text-xs leading-relaxed text-neutral-400">
+                番目グループの「旅行先」にチェックを入れると、
+                ここに行き先が並びます。
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       {spots === null ? (
         <p className="text-sm text-neutral-400">読み込み中…</p>
-      ) : groups.length === 0 ? (
-        <p className="text-sm text-neutral-400">まだスポットがありません</p>
+      ) : visibleGroups.length === 0 ? (
+        <p className="text-sm text-neutral-400">
+          {viewSpotId
+            ? "この行き先の分岐はまだありません。旅全体の流れから「↳ これを選んだ時の質問を追加」で作れます。"
+            : "まだスポットがありません"}
+        </p>
       ) : (
         <ol className="space-y-6">
-          {groups.map((options, gi) => {
+          {visibleGroups.map((options, gi) => {
             const isPair = options.length > 1;
             const chosenSpot = isPair ? options.find((o) => o.chosen) : null;
             return (
@@ -206,23 +347,40 @@ export default function SpotsEditPage() {
                       </span>
                     )}
                   </span>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => moveGroup(gi, -1)}
-                      disabled={gi === 0 || busy}
-                      className="rounded-md border border-neutral-300 px-2.5 py-1 text-sm disabled:opacity-30"
-                      aria-label="上へ"
-                    >
-                      ↑
-                    </button>
-                    <button
-                      onClick={() => moveGroup(gi, 1)}
-                      disabled={gi === groups.length - 1 || busy}
-                      className="rounded-md border border-neutral-300 px-2.5 py-1 text-sm disabled:opacity-30"
-                      aria-label="下へ"
-                    >
-                      ↓
-                    </button>
+                  <div className="flex items-center gap-2">
+                    {/* このグループを「旅行先を選ぶステップ」にする */}
+                    <label className="flex items-center gap-1 text-xs text-neutral-500">
+                      <input
+                        type="checkbox"
+                        checked={options[0].is_destination}
+                        disabled={busy}
+                        onChange={(e) =>
+                          toggleDestination(
+                            options[0].sort_order,
+                            e.target.checked
+                          )
+                        }
+                      />
+                      旅行先
+                    </label>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => moveGroup(gi, -1)}
+                        disabled={gi === 0 || busy}
+                        className="rounded-md border border-neutral-300 px-2.5 py-1 text-sm disabled:opacity-30"
+                        aria-label="上へ"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        onClick={() => moveGroup(gi, 1)}
+                        disabled={gi === visibleGroups.length - 1 || busy}
+                        className="rounded-md border border-neutral-300 px-2.5 py-1 text-sm disabled:opacity-30"
+                        aria-label="下へ"
+                      >
+                        ↓
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -325,14 +483,14 @@ export default function SpotsEditPage() {
                         </button>
                       </div>
 
-                      {/* この選択肢を選んだ時だけ出る「次の質問」を作れる */}
-                      {isPair && (
+                      {/* 旅行先の選択肢には、その行き先だけの分岐を足せる */}
+                      {spot.is_destination && (
                         <button
                           onClick={() => addBranch(spot.id)}
                           disabled={busy}
                           className="mt-2 w-full rounded-lg border border-dashed border-violet-300 py-2 text-xs text-violet-700 disabled:opacity-40"
                         >
-                          ↳ これを選んだ時の質問を追加
+                          ↳「{spot.name}」を選んだ時の質問を追加
                         </button>
                       )}
                     </div>

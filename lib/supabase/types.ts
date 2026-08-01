@@ -27,6 +27,7 @@ export type Spot = {
   photo_required: boolean; // false なら写真なしでも達成にできる
   complete_label: string | null; // 写真不要時の達成ボタンの文言(空なら「ここに来た!」)
   parent_spot_id: string | null; // 入っていれば「親が選ばれた時だけ出る」分岐スポット
+  is_destination: boolean; // このグループは「旅行先を選ぶステップ」(管理画面のドロワーに並ぶ)
 };
 
 export type Progress = {
