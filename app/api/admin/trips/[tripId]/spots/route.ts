@@ -21,7 +21,7 @@ export async function POST(req: Request, { params }: Ctx) {
   };
   const supabase = createServerClient();
 
-  // 分岐スポットの追加: 親の次の番目に、親にぶら下げて置く
+  // 分岐スポットの追加: その行き先の「次の番目」として、親にぶら下げて置く
   if (typeof parentSpotId === "string") {
     const { data: parent } = await supabase
       .from("spots")
@@ -32,35 +32,30 @@ export async function POST(req: Request, { params }: Ctx) {
     if (!parent) {
       return NextResponse.json({ error: "parent not found" }, { status: 404 });
     }
-    const branchOrder = parent.sort_order + 1;
 
-    // 同じ親の分岐が既に5つあるなら追加しない
+    // 同じ親の分岐のうち、いちばん後ろの番目の次に置く。
+    // (無ければ親の直後。番目が同じだと選択肢扱いになってしまうため)
     const { data: siblings } = await supabase
       .from("spots")
-      .select("id")
+      .select("id, sort_order")
       .eq("trip_id", tripId)
-      .eq("parent_spot_id", parentSpotId);
-    if ((siblings ?? []).length >= 5) {
-      return NextResponse.json(
-        { error: "分岐の選択肢は最大5個までです" },
-        { status: 409 }
-      );
-    }
+      .eq("parent_spot_id", parentSpotId)
+      .order("sort_order", { ascending: false });
+    const lastOrder = siblings?.[0]?.sort_order;
+    const branchOrder = (lastOrder ?? parent.sort_order) + 1;
 
-    // 分岐を差し込むぶん、後ろの番目を1つずつ後ろへずらす(初回のみ)
-    if ((siblings ?? []).length === 0) {
-      const { data: after } = await supabase
+    // 差し込むぶん、その番目以降を1つずつ後ろへずらす
+    const { data: after } = await supabase
+      .from("spots")
+      .select("id, sort_order")
+      .eq("trip_id", tripId)
+      .gte("sort_order", branchOrder)
+      .order("sort_order", { ascending: false });
+    for (const s of after ?? []) {
+      await supabase
         .from("spots")
-        .select("id, sort_order")
-        .eq("trip_id", tripId)
-        .gte("sort_order", branchOrder)
-        .order("sort_order", { ascending: false });
-      for (const s of after ?? []) {
-        await supabase
-          .from("spots")
-          .update({ sort_order: s.sort_order + 1 })
-          .eq("id", s.id);
-      }
+        .update({ sort_order: s.sort_order + 1 })
+        .eq("id", s.id);
     }
 
     const { data: spot, error } = await supabase

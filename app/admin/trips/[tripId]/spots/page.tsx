@@ -224,8 +224,9 @@ export default function SpotsEditPage() {
             ← 旅行編集
           </Link>
         </div>
+        {/* 旅行先ビューでは、その行き先にぶら下がるスポットを足す */}
         <button
-          onClick={addGroup}
+          onClick={() => (viewSpotId ? addBranch(viewSpotId) : addGroup())}
           disabled={busy}
           className="rounded-lg bg-neutral-800 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
         >
@@ -313,11 +314,22 @@ export default function SpotsEditPage() {
       {spots === null ? (
         <p className="text-sm text-neutral-400">読み込み中…</p>
       ) : visibleGroups.length === 0 ? (
-        <p className="text-sm text-neutral-400">
-          {viewSpotId
-            ? "この行き先の分岐はまだありません。旅全体の流れから「↳ これを選んだ時の質問を追加」で作れます。"
-            : "まだスポットがありません"}
-        </p>
+        viewSpotId ? (
+          <div className="rounded-xl border border-dashed border-violet-300 p-6 text-center">
+            <p className="text-sm text-neutral-500">
+              「{viewingName}」を選んだ時のスポットはまだありません
+            </p>
+            <button
+              onClick={() => addBranch(viewSpotId)}
+              disabled={busy}
+              className="mt-4 rounded-lg bg-violet-600 px-5 py-2.5 text-sm font-medium text-white disabled:opacity-40"
+            >
+              + 最初のスポットを追加
+            </button>
+          </div>
+        ) : (
+          <p className="text-sm text-neutral-400">まだスポットがありません</p>
+        )
       ) : (
         <ol className="space-y-6">
           {visibleGroups.map((options, gi) => {
@@ -532,6 +544,23 @@ export default function SpotsEditPage() {
               </li>
             );
           })}
+          {/* 一覧の末尾からも足せるように(上まで戻らなくていい) */}
+          <li>
+            <button
+              onClick={() => (viewSpotId ? addBranch(viewSpotId) : addGroup())}
+              disabled={busy}
+              className={
+                "w-full rounded-xl border border-dashed py-3 text-sm disabled:opacity-40 " +
+                (viewSpotId
+                  ? "border-violet-300 text-violet-700"
+                  : "border-neutral-300 text-neutral-500")
+              }
+            >
+              {viewSpotId
+                ? `+「${viewingName}」のスポットを追加`
+                : "+ スポットを追加"}
+            </button>
+          </li>
         </ol>
       )}
     </main>
