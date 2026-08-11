@@ -378,7 +378,9 @@ export default function MissionCard({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.1 }}
-            onClick={() => {
+            onClick={(e) => {
+              // 押した瞬間に反応を返す(遷移までの間、無反応に見せない)
+              e.currentTarget.style.opacity = "0.6";
               // 直前の達成を反映してから進む(次が2択なら選択画面へ)
               router.refresh();
               router.push(nextHref);

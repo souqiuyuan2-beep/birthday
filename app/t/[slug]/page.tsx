@@ -10,6 +10,7 @@ import { buildSpotGroups, currentGroupIndex } from "@/lib/spot-groups";
 import LogoutLink from "@/components/girlfriend/LogoutLink";
 import Sparkles from "@/components/girlfriend/Sparkles";
 import HomePhotoAdd from "@/components/girlfriend/HomePhotoAdd";
+import TapLink from "@/components/girlfriend/TapLink";
 import type { Photo, Progress, Spot, Trip } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
@@ -203,7 +204,7 @@ export default async function HomePage({
               )}
               <div className="relative shrink-0">{node}</div>
               <div className="min-w-0 flex-1">
-                {state === "locked" ? card : <Link href={href}>{card}</Link>}
+                {state === "locked" ? card : <TapLink href={href}>{card}</TapLink>}
               </div>
             </li>
           );

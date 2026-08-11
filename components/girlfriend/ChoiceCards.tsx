@@ -49,12 +49,14 @@ export default function ChoiceCards({
       });
       if (!res.ok) {
         setError(true);
+        setBusy(false);
         return;
       }
+      // 画面が切り替わるまで busy のままにして、二重タップと
+      // 「押したのに無反応」に見える状態を防ぐ
       router.replace(`/t/${slug}/mission/${selectedId}`);
     } catch {
       setError(true);
-    } finally {
       setBusy(false);
     }
   }
