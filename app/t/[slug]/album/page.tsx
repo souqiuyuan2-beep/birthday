@@ -18,27 +18,23 @@ export default async function AlbumPage({
   const { slug } = await params;
   const supabase = createServerClient();
 
-  const { data: trip } = (await supabase
+  // 1往復でまとめて取る(trip を待ってから取り直すと表示が遅れる)
+  const { data: tripRow } = (await supabase
     .from("trips")
-    .select("id, title")
+    .select("id, title, spots!spots_trip_id_fkey(*), photos(*)")
     .eq("slug", slug)
-    .single()) as { data: Pick<Trip, "id" | "title"> | null };
-  if (!trip) notFound();
+    .single()) as {
+    data:
+      | (Pick<Trip, "id" | "title"> & { spots: Spot[]; photos: Photo[] })
+      | null;
+  };
+  if (!tripRow) notFound();
 
-  const [{ data: spots }, { data: photos }] = (await Promise.all([
-    supabase
-      .from("spots")
-      .select("*")
-      .eq("trip_id", trip.id)
-      .order("sort_order", { ascending: true }),
-    supabase
-      .from("photos")
-      .select("*")
-      .eq("trip_id", trip.id)
-      .order("created_at", { ascending: true }),
-  ])) as [{ data: Spot[] | null }, { data: Photo[] | null }];
-
-  const photoList = photos ?? [];
+  const trip = tripRow;
+  const spots = tripRow.spots ?? [];
+  const photoList = [...(tripRow.photos ?? [])].sort((a, b) =>
+    a.created_at.localeCompare(b.created_at)
+  );
   const { data: signed } =
     photoList.length > 0
       ? await supabase.storage.from("photos").createSignedUrls(

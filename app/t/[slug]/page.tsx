@@ -22,32 +22,30 @@ export default async function HomePage({
   const { slug } = await params;
   const supabase = createServerClient();
 
-  const { data: trip } = (await supabase
+  // trip を待ってから残りを取ると往復が2回になり、そのぶん表示が遅れる。
+  // slug で関連レコードもまとめて取り、1往復で済ませる
+  const { data: tripRow } = (await supabase
     .from("trips")
-    .select("*")
+    .select(
+      "*, spots!spots_trip_id_fkey(*), progress(*), photos(*)"
+    )
     .eq("slug", slug)
-    .single()) as { data: Trip | null };
+    .single()) as {
+    data:
+      | (Trip & { spots: Spot[]; progress: Progress[]; photos: Photo[] })
+      | null;
+  };
 
-  if (!trip) notFound();
+  if (!tripRow) notFound();
 
-  const [{ data: spots }, { data: progress }, { data: photos }] =
-    (await Promise.all([
-      supabase
-        .from("spots")
-        .select("*")
-        .eq("trip_id", trip.id)
-        .order("sort_order", { ascending: true }),
-      supabase.from("progress").select("*").eq("trip_id", trip.id),
-      supabase
-        .from("photos")
-        .select("*")
-        .eq("trip_id", trip.id)
-        .order("created_at", { ascending: true }),
-    ])) as [
-      { data: Spot[] | null },
-      { data: Progress[] | null },
-      { data: Photo[] | null },
-    ];
+  const trip = tripRow;
+  const spots = [...(tripRow.spots ?? [])].sort(
+    (a, b) => a.sort_order - b.sort_order
+  );
+  const progress = tripRow.progress ?? [];
+  const photos = [...(tripRow.photos ?? [])].sort((a, b) =>
+    a.created_at.localeCompare(b.created_at)
+  );
 
   const groups = buildSpotGroups(spots ?? [], progress ?? []);
   const doneCount = groups.filter((g) => g.done).length;

@@ -20,23 +20,20 @@ export default async function ChoicePage({
   if (!Number.isInteger(sortOrder)) notFound();
 
   const supabase = createServerClient();
-  const { data: trip } = (await supabase
+  // 1往復でまとめて取る(trip を待ってから取り直すと表示が遅れる)
+  const { data: tripRow } = (await supabase
     .from("trips")
-    .select("id")
+    .select("id, spots!spots_trip_id_fkey(*), progress(*)")
     .eq("slug", slug)
-    .single()) as { data: Pick<Trip, "id"> | null };
-  if (!trip) notFound();
+    .single()) as {
+    data: (Pick<Trip, "id"> & { spots: Spot[]; progress: Progress[] }) | null;
+  };
+  if (!tripRow) notFound();
 
-  const [{ data: spots }, { data: progress }] = (await Promise.all([
-    supabase
-      .from("spots")
-      .select("*")
-      .eq("trip_id", trip.id)
-      .order("sort_order", { ascending: true }),
-    supabase.from("progress").select("*").eq("trip_id", trip.id),
-  ])) as [{ data: Spot[] | null }, { data: Progress[] | null }];
-
-  const groups = buildSpotGroups(spots ?? [], progress ?? []);
+  const spots = [...(tripRow.spots ?? [])].sort(
+    (a, b) => a.sort_order - b.sort_order
+  );
+  const groups = buildSpotGroups(spots, tripRow.progress ?? []);
   const index = groups.findIndex((g) => g.sortOrder === sortOrder);
   const group = index >= 0 ? groups[index] : null;
 

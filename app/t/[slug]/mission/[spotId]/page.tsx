@@ -18,33 +18,32 @@ export default async function MissionPage({
   const { slug, spotId } = await params;
   const supabase = createServerClient();
 
-  const { data: trip } = (await supabase
+  // 1往復でまとめて取る(trip を待ってから取り直すと表示が遅れる)
+  const { data: tripRow } = (await supabase
     .from("trips")
-    .select("id")
+    .select("id, spots!spots_trip_id_fkey(*), progress(*), photos(*)")
     .eq("slug", slug)
-    .single()) as { data: Pick<Trip, "id"> | null };
-  if (!trip) notFound();
+    .single()) as {
+    data:
+      | (Pick<Trip, "id"> & {
+          spots: Spot[];
+          progress: Progress[];
+          photos: Photo[];
+        })
+      | null;
+  };
+  if (!tripRow) notFound();
 
-  const [{ data: spots }, { data: progress }, { data: photos }] =
-    (await Promise.all([
-      supabase
-        .from("spots")
-        .select("*")
-        .eq("trip_id", trip.id)
-        .order("sort_order", { ascending: true }),
-      supabase.from("progress").select("*").eq("trip_id", trip.id),
-      supabase
-        .from("photos")
-        .select("*")
-        .eq("spot_id", spotId)
-        .order("created_at", { ascending: true }),
-    ])) as [
-      { data: Spot[] | null },
-      { data: Progress[] | null },
-      { data: Photo[] | null },
-    ];
+  const spots = [...(tripRow.spots ?? [])].sort(
+    (a, b) => a.sort_order - b.sort_order
+  );
+  const progress = tripRow.progress ?? [];
+  // このスポットの写真だけを古い順に
+  const photos = (tripRow.photos ?? [])
+    .filter((p) => p.spot_id === spotId)
+    .sort((a, b) => a.created_at.localeCompare(b.created_at));
 
-  const groups = buildSpotGroups(spots ?? [], progress ?? []);
+  const groups = buildSpotGroups(spots, progress);
   const groupIndex = groups.findIndex((g) =>
     g.options.some((o) => o.id === spotId)
   );
