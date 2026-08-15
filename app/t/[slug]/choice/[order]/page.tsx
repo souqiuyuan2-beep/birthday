@@ -47,14 +47,32 @@ export default async function ChoicePage({
     redirect(`/t/${slug}`);
   }
 
+  // スペシャル演出の画像(選ぶ前にプレゼントのように見せる)
+  const specialPath = group.options.find((o) => o.special_image_path)
+    ?.special_image_path;
+  let specialImageUrl: string | null = null;
+  if (specialPath) {
+    const { data } = await supabase.storage
+      .from("special")
+      .createSignedUrl(specialPath, 60 * 60);
+    specialImageUrl = data?.signedUrl ?? null;
+  }
+
   return (
     <ChoiceCards
       initialSelectedId={group.effective?.id ?? null}
+      specialImageUrl={specialImageUrl}
       options={group.options.map((spot) => ({
         id: spot.id,
-        displayName: spot.reveal_name ? spot.name : "???",
-        mission: spot.mission,
-        message: spot.message,
+        // シークレットは中身を完全に伏せる(選ぶまで分からない)
+        secret: spot.is_secret,
+        displayName: spot.is_secret
+          ? "???"
+          : spot.reveal_name
+            ? spot.name
+            : "???",
+        mission: spot.is_secret ? "" : spot.mission,
+        message: spot.is_secret ? null : spot.message,
       }))}
     />
   );

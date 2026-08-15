@@ -28,6 +28,8 @@ export type Spot = {
   complete_label: string | null; // 写真不要時の達成ボタンの文言(空なら「ここに来た!」)
   parent_spot_id: string | null; // 入っていれば「親が選ばれた時だけ出る」分岐スポット
   is_destination: boolean; // このグループは「旅行先を選ぶステップ」(管理画面のドロワーに並ぶ)
+  is_secret: boolean; // 選択画面で名前もミッションも伏せる(選ぶまで中身が分からない)
+  special_image_path: string | null; // 選択画面の前にプレゼント演出で見せる画像
 };
 
 export type Progress = {

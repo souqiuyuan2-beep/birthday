@@ -8,21 +8,27 @@ import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { getTripToken } from "@/lib/auth-client";
 import Sparkles from "@/components/girlfriend/Sparkles";
+import SpecialGift from "@/components/girlfriend/SpecialGift";
 
 type Option = {
   id: string;
   displayName: string;
   mission: string;
   message: string | null;
+  secret?: boolean; // 中身を伏せて「?」で見せる
 };
 
 export default function ChoiceCards({
   options,
   initialSelectedId = null,
+  specialImageUrl = null,
 }: {
   options: Option[];
   initialSelectedId?: string | null;
+  specialImageUrl?: string | null;
 }) {
+  // スペシャル演出がある場合は、選ぶ前にプレゼントを見せる
+  const [giftDone, setGiftDone] = useState(false);
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
@@ -63,6 +69,13 @@ export default function ChoiceCards({
 
   return (
     <main className="relative mx-auto flex min-h-dvh max-w-md flex-col px-6 py-8">
+      {/* 選ぶ前に、プレゼントのように画像を見せる */}
+      {specialImageUrl && !giftDone && (
+        <SpecialGift
+          imageUrl={specialImageUrl}
+          onDone={() => setGiftDone(true)}
+        />
+      )}
       <Sparkles count={10} />
       <button
         onClick={() => router.push(`/t/${slug}`)}
@@ -92,16 +105,30 @@ export default function ChoiceCards({
                   : "border-neutral-200 shadow-sm")
               }
             >
-              <span className="block font-serif text-lg font-semibold tracking-wide">
-                {option.displayName}
-              </span>
-              <span className="mt-2 block text-sm leading-relaxed text-neutral-600">
-                {option.mission}
-              </span>
-              {option.message && (
-                <span className="mt-2 block text-xs leading-relaxed text-neutral-400">
-                  {option.message}
+              {option.secret ? (
+                // 中身を伏せて、選ぶまで分からないようにする
+                <span className="flex flex-col items-center py-4">
+                  <span className="font-serif text-3xl tracking-widest text-theme-deep">
+                    ?
+                  </span>
+                  <span className="mt-3 text-sm text-neutral-500">
+                    えらぶまで ひみつ
+                  </span>
                 </span>
+              ) : (
+                <>
+                  <span className="block font-serif text-lg font-semibold tracking-wide">
+                    {option.displayName}
+                  </span>
+                  <span className="mt-2 block text-sm leading-relaxed text-neutral-600">
+                    {option.mission}
+                  </span>
+                  {option.message && (
+                    <span className="mt-2 block text-xs leading-relaxed text-neutral-400">
+                      {option.message}
+                    </span>
+                  )}
+                </>
               )}
               {selected && (
                 <motion.span

@@ -122,6 +122,33 @@ export default function SpotsEditPage() {
     setBusy(false);
   }
 
+  // スペシャル演出: 選択画面の前にプレゼントのように見せる画像
+  async function uploadSpecial(sortOrder: number, file: File) {
+    setBusy(true);
+    const form = new FormData();
+    form.append("file", file);
+    form.append("sortOrder", String(sortOrder));
+    const res = await adminFetch(`/api/admin/trips/${tripId}/special`, {
+      method: "POST",
+      body: form,
+    });
+    if (!res.ok) alert("画像をアップロードできませんでした");
+    await load();
+    setBusy(false);
+  }
+
+  async function removeSpecial(sortOrder: number) {
+    if (!confirm("スペシャル演出の画像を削除しますか?")) return;
+    setBusy(true);
+    await adminFetch(`/api/admin/trips/${tripId}/special`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sortOrder }),
+    });
+    await load();
+    setBusy(false);
+  }
+
   // このスポットが選ばれた時だけ出る「次の質問」を足す
   async function addBranch(parentSpotId: string) {
     setBusy(true);
@@ -157,6 +184,7 @@ export default function SpotsEditPage() {
         message: spot.message || null,
         photo_required: spot.photo_required,
         complete_label: spot.complete_label || null,
+        is_secret: spot.is_secret,
       }),
     });
     if (res.ok) {
@@ -467,6 +495,17 @@ export default function SpotsEditPage() {
                             />
                             写真を必須にする
                           </label>
+                          {/* 選ぶまで中身を伏せて、ワクワク感を作る */}
+                          <label className="flex items-center gap-1.5 text-xs text-neutral-600">
+                            <input
+                              type="checkbox"
+                              checked={spot.is_secret}
+                              onChange={(e) =>
+                                setField(spot.id, "is_secret", e.target.checked)
+                              }
+                            />
+                            シークレットにする
+                          </label>
                         </div>
                         {/* 写真不要のときだけ、達成ボタンの文言を自由に決められる */}
                         {!spot.photo_required && (
@@ -540,6 +579,41 @@ export default function SpotsEditPage() {
                   >
                     {isPair ? "+ 選択肢を追加" : "+ 選択肢を追加(選ばせる)"}
                   </button>
+                )}
+
+                {/* スペシャル演出: 選択画面を開いた時、選ぶ前にプレゼントのように見せる画像 */}
+                {isPair && (
+                  <div className="mt-2">
+                    {options[0].special_image_path ? (
+                      <div className="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-2.5">
+                        <span className="text-xs text-amber-800">
+                          🎁 スペシャル演出あり
+                        </span>
+                        <button
+                          onClick={() => removeSpecial(options[0].sort_order)}
+                          disabled={busy}
+                          className="text-xs text-red-500 disabled:opacity-40"
+                        >
+                          削除
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="block cursor-pointer rounded-xl border border-dashed border-amber-300 py-2.5 text-center text-xs text-amber-700">
+                        🎁 スペシャル演出を追加する(画像1枚)
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={busy}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            e.target.value = "";
+                            if (f) void uploadSpecial(options[0].sort_order, f);
+                          }}
+                        />
+                      </label>
+                    )}
+                  </div>
                 )}
               </li>
             );

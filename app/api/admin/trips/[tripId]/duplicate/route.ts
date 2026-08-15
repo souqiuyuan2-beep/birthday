@@ -58,6 +58,8 @@ export async function POST(
           photo_required: s.photo_required,
           complete_label: s.complete_label,
           is_destination: s.is_destination,
+          is_secret: s.is_secret,
+          special_image_path: s.special_image_path,
         }))
       )
       .select()) as { data: Spot[] | null; error: { message: string } | null };
