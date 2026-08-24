@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { adminFetch } from "@/lib/admin-client";
+
 import type { Trip } from "@/lib/supabase/types";
 
 export default function TripEditPage() {
@@ -19,7 +19,7 @@ export default function TripEditPage() {
   const [resetDone, setResetDone] = useState(false);
 
   const load = useCallback(async () => {
-    const res = await adminFetch(`/api/admin/trips/${tripId}`);
+    const res = await fetch(`/api/admin/trips/${tripId}`);
     if (res.ok) setTrip((await res.json()).trip);
   }, [tripId]);
 
@@ -35,7 +35,7 @@ export default function TripEditPage() {
   async function save() {
     if (!trip) return;
     setBusy(true);
-    const res = await adminFetch(`/api/admin/trips/${tripId}`, {
+    const res = await fetch(`/api/admin/trips/${tripId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -58,7 +58,7 @@ export default function TripEditPage() {
     if (!confirm(warn)) return;
     setBusy(true);
     setResetDone(false);
-    const res = await adminFetch(`/api/admin/trips/${tripId}/reset`, {
+    const res = await fetch(`/api/admin/trips/${tripId}/reset`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ keepPhotos }),
@@ -77,7 +77,7 @@ export default function TripEditPage() {
     const form = new FormData();
     form.append("file", file);
     form.append("kind", kind);
-    await adminFetch(`/api/admin/trips/${tripId}/bgm`, {
+    await fetch(`/api/admin/trips/${tripId}/bgm`, {
       method: "POST",
       body: form,
     });
@@ -87,7 +87,7 @@ export default function TripEditPage() {
 
   async function removeBgm(kind: "opening" | "ending") {
     setBgmBusy(kind);
-    await adminFetch(`/api/admin/trips/${tripId}/bgm`, {
+    await fetch(`/api/admin/trips/${tripId}/bgm`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ kind }),
@@ -111,18 +111,18 @@ export default function TripEditPage() {
   return (
     <main className="mx-auto min-h-dvh max-w-md px-5 py-8">
       <header className="mb-6 flex items-center justify-between">
-        <Link href="/admin" className="text-sm text-neutral-400">
+        <Link href="/create" className="text-sm text-neutral-400">
           ← 一覧
         </Link>
         <div className="flex gap-2">
           <Link
-            href={`/admin/trips/${tripId}/dashboard`}
+            href={`/create/${tripId}/dashboard`}
             className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium"
           >
             ダッシュボード
           </Link>
           <Link
-            href={`/admin/trips/${tripId}/spots`}
+            href={`/create/${tripId}/spots`}
             className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium"
           >
             スポット編集 →

@@ -3,7 +3,7 @@
 // trips.opening_bgm_path / ending_bgm_path を更新。DELETE { kind } で解除
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
-import { isAdminRequest } from "@/lib/admin-api";
+import { getAccess } from "@/lib/access";
 
 type Ctx = { params: Promise<{ tripId: string }> };
 
@@ -13,10 +13,11 @@ const COLUMN = {
 } as const;
 
 export async function POST(req: Request, { params }: Ctx) {
-  if (!isAdminRequest(req)) {
+  const { tripId } = await params;
+  const access = await getAccess(tripId);
+  if (!access?.isOwner) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const { tripId } = await params;
   const form = await req.formData().catch(() => null);
   const file = form?.get("file");
   const kind = form?.get("kind");
@@ -52,10 +53,11 @@ export async function POST(req: Request, { params }: Ctx) {
 }
 
 export async function DELETE(req: Request, { params }: Ctx) {
-  if (!isAdminRequest(req)) {
+  const { tripId } = await params;
+  const access = await getAccess(tripId);
+  if (!access?.isOwner) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const { tripId } = await params;
   const { kind } = (await req.json().catch(() => ({}))) as { kind?: string };
   if (kind !== "opening" && kind !== "ending") {
     return NextResponse.json({ error: "bad request" }, { status: 400 });

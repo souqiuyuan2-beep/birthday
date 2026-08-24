@@ -1,15 +1,16 @@
 // A3の裏側: 旅行の取得(スポット・達成状況込み)・更新・削除
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
-import { isAdminRequest } from "@/lib/admin-api";
+import { getAccess } from "@/lib/access";
 
 type Ctx = { params: Promise<{ tripId: string }> };
 
 export async function GET(req: Request, { params }: Ctx) {
-  if (!isAdminRequest(req)) {
+  const { tripId } = await params;
+  const access = await getAccess(tripId);
+  if (!access?.isOwner) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const { tripId } = await params;
   const supabase = createServerClient();
   const [{ data: trip }, { data: spots }, { data: progress }] =
     await Promise.all([
@@ -41,10 +42,11 @@ const EDITABLE = [
 ] as const;
 
 export async function PATCH(req: Request, { params }: Ctx) {
-  if (!isAdminRequest(req)) {
+  const { tripId } = await params;
+  const access = await getAccess(tripId);
+  if (!access?.isOwner) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const { tripId } = await params;
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const update: Record<string, unknown> = {};
   for (const key of EDITABLE) {
@@ -65,10 +67,11 @@ export async function PATCH(req: Request, { params }: Ctx) {
 }
 
 export async function DELETE(req: Request, { params }: Ctx) {
-  if (!isAdminRequest(req)) {
+  const { tripId } = await params;
+  const access = await getAccess(tripId);
+  if (!access?.isOwner) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const { tripId } = await params;
   const supabase = createServerClient();
 
   // Storageの実ファイルも掃除(ベストエフォート)。DB行はcascadeで消える

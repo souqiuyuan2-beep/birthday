@@ -2,7 +2,7 @@
 // GET → { total, doneCount, currentName, allDone, photos: 新しい順(署名付きURL) }
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
-import { isAdminRequest } from "@/lib/admin-api";
+import { getAccess } from "@/lib/access";
 import { buildSpotGroups, currentGroupIndex } from "@/lib/spot-groups";
 import type { Photo, Progress, Spot } from "@/lib/supabase/types";
 
@@ -10,10 +10,11 @@ export async function GET(
   req: Request,
   { params }: { params: Promise<{ tripId: string }> }
 ) {
-  if (!isAdminRequest(req)) {
+  const { tripId } = await params;
+  const access = await getAccess(tripId);
+  if (!access?.isOwner) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const { tripId } = await params;
   const supabase = createServerClient();
 
   const [{ data: spots }, { data: progress }, { data: photos }] =

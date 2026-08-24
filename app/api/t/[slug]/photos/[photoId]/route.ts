@@ -3,7 +3,7 @@
 // Storageの実ファイルとDB行を削除する。達成状態(progress)はそのまま残す
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
-import { verifyTripToken } from "@/lib/auth";
+import { getAccessBySlug } from "@/lib/access";
 import type { Photo, Trip } from "@/lib/supabase/types";
 
 export async function DELETE(
@@ -11,7 +11,6 @@ export async function DELETE(
   { params }: { params: Promise<{ slug: string; photoId: string }> }
 ) {
   const { slug, photoId } = await params;
-  const token = (req.headers.get("authorization") ?? "").replace(/^Bearer /, "");
 
   const supabase = createServerClient();
   const { data: trip } = (await supabase
@@ -20,7 +19,9 @@ export async function DELETE(
     .eq("slug", slug)
     .single()) as { data: Pick<Trip, "id"> | null };
   if (!trip) return NextResponse.json({ error: "not found" }, { status: 404 });
-  if (!token || !verifyTripToken(trip.id, token)) {
+  // この旅の参加者(または作成者)だけが操作できる
+  const access = await getAccessBySlug(slug);
+  if (!access?.isMember) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

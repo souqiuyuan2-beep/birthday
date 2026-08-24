@@ -2,17 +2,18 @@
 import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
-import { isAdminRequest } from "@/lib/admin-api";
+import { getAccess } from "@/lib/access";
 import type { Spot, Trip } from "@/lib/supabase/types";
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ tripId: string }> }
 ) {
-  if (!isAdminRequest(req)) {
+  const { tripId } = await params;
+  const access = await getAccess(tripId);
+  if (!access?.isOwner) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const { tripId } = await params;
   const supabase = createServerClient();
 
   const [{ data: trip }, { data: spots }] = (await Promise.all([

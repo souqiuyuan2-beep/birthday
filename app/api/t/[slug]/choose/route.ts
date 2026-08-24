@@ -3,7 +3,7 @@
 // 同じ番目の選択肢の中から1つを chosen にする。写真を撮り始めた後は変更不可
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
-import { verifyTripToken } from "@/lib/auth";
+import { getAccessBySlug } from "@/lib/access";
 import type { Spot, Trip } from "@/lib/supabase/types";
 
 export async function POST(
@@ -11,7 +11,6 @@ export async function POST(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
-  const token = (req.headers.get("authorization") ?? "").replace(/^Bearer /, "");
   const { spotId } = (await req.json().catch(() => ({}))) as { spotId?: string };
   if (typeof spotId !== "string") {
     return NextResponse.json({ error: "bad request" }, { status: 400 });
@@ -24,7 +23,9 @@ export async function POST(
     .eq("slug", slug)
     .single()) as { data: Pick<Trip, "id"> | null };
   if (!trip) return NextResponse.json({ error: "not found" }, { status: 404 });
-  if (!token || !verifyTripToken(trip.id, token)) {
+  // この旅の参加者(または作成者)だけが操作できる
+  const access = await getAccessBySlug(slug);
+  if (!access?.isMember) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

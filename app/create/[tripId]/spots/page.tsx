@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { adminFetch } from "@/lib/admin-client";
+
 import type { Spot } from "@/lib/supabase/types";
 
 export default function SpotsEditPage() {
@@ -25,7 +25,7 @@ export default function SpotsEditPage() {
   const [openSpotId, setOpenSpotId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const res = await adminFetch(`/api/admin/trips/${tripId}`);
+    const res = await fetch(`/api/admin/trips/${tripId}`);
     if (res.ok) {
       const data = await res.json();
       setSpots(data.spots);
@@ -89,14 +89,14 @@ export default function SpotsEditPage() {
 
   async function addGroup() {
     setBusy(true);
-    await adminFetch(`/api/admin/trips/${tripId}/spots`, { method: "POST" });
+    await fetch(`/api/admin/trips/${tripId}/spots`, { method: "POST" });
     await load();
     setBusy(false);
   }
 
   async function addOption(sortOrder: number) {
     setBusy(true);
-    const res = await adminFetch(`/api/admin/trips/${tripId}/spots`, {
+    const res = await fetch(`/api/admin/trips/${tripId}/spots`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sortOrder }),
@@ -112,7 +112,7 @@ export default function SpotsEditPage() {
   // 番目グループを「旅行先を選ぶステップ」にする / 解除する
   async function toggleDestination(sortOrder: number, isDestination: boolean) {
     setBusy(true);
-    const res = await adminFetch(`/api/admin/trips/${tripId}/destination`, {
+    const res = await fetch(`/api/admin/trips/${tripId}/destination`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sortOrder, isDestination }),
@@ -128,7 +128,7 @@ export default function SpotsEditPage() {
     const form = new FormData();
     form.append("file", file);
     form.append("sortOrder", String(sortOrder));
-    const res = await adminFetch(`/api/admin/trips/${tripId}/special`, {
+    const res = await fetch(`/api/admin/trips/${tripId}/special`, {
       method: "POST",
       body: form,
     });
@@ -140,7 +140,7 @@ export default function SpotsEditPage() {
   async function removeSpecial(sortOrder: number) {
     if (!confirm("スペシャル演出の画像を削除しますか?")) return;
     setBusy(true);
-    await adminFetch(`/api/admin/trips/${tripId}/special`, {
+    await fetch(`/api/admin/trips/${tripId}/special`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sortOrder }),
@@ -152,7 +152,7 @@ export default function SpotsEditPage() {
   // このスポットが選ばれた時だけ出る「次の質問」を足す
   async function addBranch(parentSpotId: string) {
     setBusy(true);
-    const res = await adminFetch(`/api/admin/trips/${tripId}/spots`, {
+    const res = await fetch(`/api/admin/trips/${tripId}/spots`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ parentSpotId }),
@@ -173,7 +173,7 @@ export default function SpotsEditPage() {
       return;
     }
     setBusy(true);
-    const res = await adminFetch(`/api/admin/spots/${spot.id}`, {
+    const res = await fetch(`/api/admin/spots/${spot.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -202,7 +202,7 @@ export default function SpotsEditPage() {
         : `「${spot.name}」を削除しますか?`;
     if (!confirm(warn)) return;
     setBusy(true);
-    await adminFetch(`/api/admin/spots/${spot.id}`, { method: "DELETE" });
+    await fetch(`/api/admin/spots/${spot.id}`, { method: "DELETE" });
     await load();
     setBusy(false);
   }
@@ -222,7 +222,7 @@ export default function SpotsEditPage() {
         options.map((s) => ({ ...s, sort_order: i + 1 }))
       )
     );
-    await adminFetch(`/api/admin/trips/${tripId}/spots`, {
+    await fetch(`/api/admin/trips/${tripId}/spots`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ orderedGroups: next.map((g) => g.map((s) => s.id)) }),
@@ -246,7 +246,7 @@ export default function SpotsEditPage() {
             ☰ <span className="text-xs">切替</span>
           </button>
           <Link
-            href={`/admin/trips/${tripId}`}
+            href={`/create/${tripId}`}
             className="text-sm text-neutral-400"
           >
             ← 旅行編集

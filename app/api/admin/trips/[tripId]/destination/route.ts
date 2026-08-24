@@ -2,16 +2,17 @@
 // PUT { sortOrder, isDestination } — 同じ番目のスポットすべてに印を付け外しする
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
-import { isAdminRequest } from "@/lib/admin-api";
+import { getAccess } from "@/lib/access";
 
 export async function PUT(
   req: Request,
   { params }: { params: Promise<{ tripId: string }> }
 ) {
-  if (!isAdminRequest(req)) {
+  const { tripId } = await params;
+  const access = await getAccess(tripId);
+  if (!access?.isOwner) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const { tripId } = await params;
   const { sortOrder, isDestination } = (await req.json().catch(() => ({}))) as {
     sortOrder?: number;
     isDestination?: boolean;

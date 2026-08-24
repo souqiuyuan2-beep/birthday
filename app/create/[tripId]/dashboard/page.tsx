@@ -10,7 +10,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { supabase } from "@/lib/supabase/client";
-import { adminFetch } from "@/lib/admin-client";
+
 
 type FeedPhoto = {
   id: string;
@@ -34,7 +34,7 @@ export default function DashboardPage() {
   const [live, setLive] = useState(false);
 
   const load = useCallback(async () => {
-    const res = await adminFetch(`/api/admin/trips/${tripId}/dashboard`);
+    const res = await fetch(`/api/admin/trips/${tripId}/dashboard`);
     if (res.ok) setData(await res.json());
   }, [tripId]);
 
@@ -77,7 +77,7 @@ export default function DashboardPage() {
   return (
     <main className="mx-auto min-h-dvh max-w-md px-5 py-8">
       <header className="mb-6 flex items-center justify-between">
-        <Link href={`/admin/trips/${tripId}`} className="text-sm text-neutral-400">
+        <Link href={`/create/${tripId}`} className="text-sm text-neutral-400">
           ← 旅行編集
         </Link>
         <span

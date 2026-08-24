@@ -5,7 +5,7 @@
 // storage_path はバケット内パス {trip_id}/{spot_id}/{ts}.jpg(バケット名: photos)
 import { NextResponse, after } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
-import { verifyTripToken } from "@/lib/auth";
+import { getAccessBySlug } from "@/lib/access";
 import { sendPhotoNotification } from "@/lib/email";
 import type { Photo, Spot, Trip } from "@/lib/supabase/types";
 
@@ -14,7 +14,6 @@ export async function POST(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
-  const token = (req.headers.get("authorization") ?? "").replace(/^Bearer /, "");
 
   const form = await req.formData().catch(() => null);
   const file = form?.get("file");
@@ -32,7 +31,9 @@ export async function POST(
     data: Pick<Trip, "id" | "title" | "notify_email"> | null;
   };
   if (!trip) return NextResponse.json({ error: "not found" }, { status: 404 });
-  if (!token || !verifyTripToken(trip.id, token)) {
+  // この旅の参加者(または作成者)だけが操作できる
+  const access = await getAccessBySlug(slug);
+  if (!access?.isMember) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

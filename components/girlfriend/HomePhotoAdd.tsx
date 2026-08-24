@@ -5,7 +5,6 @@
 
 import { useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getTripToken } from "@/lib/auth-client";
 import { compressImage } from "@/lib/image";
 import { uploadPhoto } from "@/lib/upload";
 
@@ -31,11 +30,6 @@ export default function HomePhotoAdd({ targets }: { targets: Target[] }) {
   async function handleFiles(fileList: FileList | null) {
     const raws = [...(fileList ?? [])];
     if (raws.length === 0 || !spotId) return;
-    const token = getTripToken(slug);
-    if (!token) {
-      router.replace("/");
-      return;
-    }
     for (let i = 0; i < raws.length; i++) {
       setProgress(`${raws.length}枚中${i + 1}枚目を送っています…`);
       let file: File;
@@ -45,7 +39,7 @@ export default function HomePhotoAdd({ targets }: { targets: Target[] }) {
         file = raws[i];
       }
       try {
-        await uploadPhoto({ slug, spotId, token, file });
+        await uploadPhoto({ slug, spotId, file });
       } catch {
         setProgress("うまく送れなかったみたい。もう一度試してね");
         setTimeout(() => setProgress(null), 3000);

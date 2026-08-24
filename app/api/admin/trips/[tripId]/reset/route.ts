@@ -5,16 +5,17 @@
 // プラン(旅行・スポットの内容)は消さない
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
-import { isAdminRequest } from "@/lib/admin-api";
+import { getAccess } from "@/lib/access";
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ tripId: string }> }
 ) {
-  if (!isAdminRequest(req)) {
+  const { tripId } = await params;
+  const access = await getAccess(tripId);
+  if (!access?.isOwner) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const { tripId } = await params;
   const { keepPhotos } = (await req.json().catch(() => ({}))) as {
     keepPhotos?: boolean;
   };

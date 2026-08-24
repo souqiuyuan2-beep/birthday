@@ -13,7 +13,6 @@ const MAX_ATTEMPTS = 3;
 export async function uploadPhoto(args: {
   slug: string;
   spotId: string;
-  token: string;
   file: File;
   onProgress?: (percent: number) => void;
 }): Promise<UploadResult> {
@@ -37,13 +36,11 @@ export async function uploadPhoto(args: {
 function uploadOnce({
   slug,
   spotId,
-  token,
   file,
   onProgress,
 }: {
   slug: string;
   spotId: string;
-  token: string;
   file: File;
   onProgress?: (percent: number) => void;
 }): Promise<UploadResult> {
@@ -54,7 +51,6 @@ function uploadOnce({
 
     const xhr = new XMLHttpRequest();
     xhr.open("POST", `/api/t/${slug}/upload`);
-    xhr.setRequestHeader("Authorization", `Bearer ${token}`);
     xhr.timeout = 60_000;
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) {

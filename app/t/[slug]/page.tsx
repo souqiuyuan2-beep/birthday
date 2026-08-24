@@ -7,7 +7,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import { buildSpotGroups, currentGroupIndex } from "@/lib/spot-groups";
-import LogoutLink from "@/components/girlfriend/LogoutLink";
 import Sparkles from "@/components/girlfriend/Sparkles";
 import HomePhotoAdd from "@/components/girlfriend/HomePhotoAdd";
 import TapLink from "@/components/girlfriend/TapLink";
@@ -250,7 +249,6 @@ export default async function HomePage({
             手紙を読み返す
           </Link>
         )}
-        <LogoutLink />
       </footer>
     </main>
   );

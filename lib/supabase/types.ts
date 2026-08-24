@@ -11,6 +11,9 @@ export type Trip = {
   ending_bgm_path: string | null;
   notify_email: string | null;
   theme_color: string;
+  owner_id: string | null; // 作成したユーザー
+  tag: string | null; // 参加用のタグ(英数字)
+  join_password: string | null; // 参加時に要求するパスワード(任意)
   created_at: string;
 };
 

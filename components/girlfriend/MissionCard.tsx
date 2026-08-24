@@ -7,7 +7,6 @@
 import { useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { getTripToken } from "@/lib/auth-client";
 import { compressImage } from "@/lib/image";
 import { uploadPhoto } from "@/lib/upload";
 import Confetti from "@/components/girlfriend/Confetti";
@@ -76,11 +75,6 @@ export default function MissionCard({
 
   // キューを1枚ずつアップロード。失敗したらその時点の残りを保持して再開できるようにする
   async function uploadQueue(queue: File[], total: number) {
-    const token = getTripToken(slug);
-    if (!token) {
-      router.replace("/");
-      return;
-    }
     let completedNow = false;
     for (let i = 0; i < queue.length; i++) {
       const index = total - queue.length + i + 1;
@@ -89,7 +83,6 @@ export default function MissionCard({
         const result = await uploadPhoto({
           slug,
           spotId,
-          token,
           file: queue[i],
           onProgress: (percent) =>
             setState({ phase: "uploading", percent, index, total }),
@@ -114,16 +107,10 @@ export default function MissionCard({
   // 写真が任意のスポットを、写真なしで達成にする
   async function completeWithoutPhoto() {
     if (busy) return;
-    const token = getTripToken(slug);
-    if (!token) {
-      router.replace("/");
-      return;
-    }
     const res = await fetch(`/api/t/${slug}/complete`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ spotId }),
     });
@@ -140,11 +127,8 @@ export default function MissionCard({
         ? "これが最後の1枚だよ。削除するとこのスポットの写真が0枚になるけど、本当に削除する?"
         : "この写真を削除する?";
     if (!confirm(warn)) return;
-    const token = getTripToken(slug);
-    if (!token) return;
     const res = await fetch(`/api/t/${slug}/photos/${photo.id}`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
     });
     if (res.ok) {
       setPhotos((list) => list.filter((p) => p.id !== photo.id));

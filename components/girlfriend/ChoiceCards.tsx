@@ -6,7 +6,6 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { getTripToken } from "@/lib/auth-client";
 import Sparkles from "@/components/girlfriend/Sparkles";
 import SpecialGift from "@/components/girlfriend/SpecialGift";
 
@@ -37,11 +36,6 @@ export default function ChoiceCards({
 
   async function confirm() {
     if (!selectedId || busy) return;
-    const token = getTripToken(slug);
-    if (!token) {
-      router.replace("/");
-      return;
-    }
     setBusy(true);
     setError(false);
     try {
@@ -49,7 +43,6 @@ export default function ChoiceCards({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ spotId: selectedId }),
       });

@@ -1,125 +1,71 @@
-// トップページ: 合言葉だけで入場できる入口(招待状の入り口の世界観)
-// 合言葉から旅を逆引き(/api/enter)し、一致したら /t/[slug] へ。
-// 旅の情報は合言葉が合うまで一切出さない
-"use client";
-
-import { useState } from "react";
+// 「参加」タブ: タグを入力して旅に参加する / 参加中の旅の一覧
+// 合言葉の代わりに、管理者が作った旅に自動で振られるタグを使う
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { saveTripToken } from "@/lib/auth-client";
-import { hasSeenOpening } from "@/lib/opening";
+import { redirect } from "next/navigation";
+import { createServerClient } from "@/lib/supabase/server";
+import { currentUserId } from "@/lib/supabase/auth-server";
+import TabBar from "@/components/TabBar";
+import JoinForm from "@/components/JoinForm";
 import Sparkles from "@/components/girlfriend/Sparkles";
+import type { Trip } from "@/lib/supabase/types";
 
-export default function EntryPage() {
-  const router = useRouter();
-  const [passphrase, setPassphrase] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+export const dynamic = "force-dynamic";
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (busy || passphrase === "") return;
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/enter", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ passphrase }),
-      });
-      if (!res.ok) {
-        setError("合言葉が違うみたい");
-        return;
-      }
-      const { slug, token, hasOpening } = (await res.json()) as {
-        slug: string;
-        token: string;
-        hasOpening: boolean;
-      };
-      saveTripToken(slug, token);
-      // 初回だけオープニング(手紙)へ。2回目以降はホームへ直行
-      if (hasOpening && !hasSeenOpening(slug)) {
-        router.replace(`/t/${slug}/opening`);
-      } else {
-        router.replace(`/t/${slug}`);
-      }
-    } catch {
-      setError("通信エラーが起きたみたい。もう一度試してね");
-    } finally {
-      setBusy(false);
-    }
-  }
+export default async function JoinPage() {
+  const userId = await currentUserId();
+  if (!userId) redirect("/login");
+
+  const supabase = createServerClient();
+  // 参加中の旅(自分が作った旅は「作る」タブに出るのでここでは除く)
+  const { data: members } = await supabase
+    .from("trip_members")
+    .select("trips(*)")
+    .eq("user_id", userId);
+  const joined = ((members ?? [])
+    .map((m) => (m as unknown as { trips: Trip }).trips)
+    .filter(Boolean) as Trip[]).filter((t) => t.owner_id !== userId);
 
   return (
-    <main className="relative mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center px-8">
-      <Sparkles count={18} />
+    <main className="relative mx-auto min-h-dvh max-w-md px-6 pb-24 pt-10">
+      <Sparkles count={12} />
 
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1, ease: "easeOut" }}
-        className="relative z-10 flex w-full flex-col items-center"
-      >
-        <span
-          aria-hidden
-          className="mb-6 text-4xl"
-          style={{ animation: "floaty 3.2s ease-in-out infinite" }}
-        >
-          ✉️
-        </span>
-        <h1 className="font-serif text-xl font-semibold tracking-[0.2em] text-neutral-700">
-          ふたりの旅へ
+      <header className="relative z-10 text-center">
+        <h1 className="font-serif text-xl font-semibold tracking-[0.2em]">
+          旅に参加する
         </h1>
-        <p className="mt-3 text-center text-sm leading-relaxed text-neutral-500">
-          二人だけの合言葉を入力してください
+        <p className="mt-3 text-sm text-neutral-500">
+          受け取ったタグを入力してください
         </p>
+      </header>
 
-        <motion.form
-          onSubmit={submit}
-          className="mt-8 w-full"
-          animate={error ? { x: [0, -8, 8, -6, 6, 0] } : {}}
-          transition={{ duration: 0.4 }}
-        >
-          <input
-            type="text"
-            value={passphrase}
-            onChange={(e) => {
-              setPassphrase(e.target.value);
-              setError(null);
-            }}
-            autoFocus
-            autoComplete="off"
-            autoCapitalize="none"
-            autoCorrect="off"
-            spellCheck={false}
-            className={
-              "w-full rounded-2xl border bg-white/90 px-5 py-4 text-center text-lg tracking-widest shadow-sm outline-none transition-all " +
-              (error
-                ? "border-red-300"
-                : "border-neutral-200 focus:border-theme focus:shadow-[0_0_0_4px_rgba(168,216,234,0.25)]")
-            }
-          />
-          {error && (
-            <p className="mt-3 text-center text-sm text-red-400">{error}</p>
-          )}
-          <button
-            type="submit"
-            disabled={busy || passphrase === ""}
-            className="mt-6 w-full rounded-2xl bg-theme py-4 text-base font-medium text-white shadow-md transition-all active:scale-[0.98] disabled:opacity-40"
-          >
-            {busy ? "確かめています…" : "扉を開く"}
-          </button>
-        </motion.form>
+      <div className="relative z-10 mt-8">
+        <JoinForm />
+      </div>
 
-        {/* 管理者(自分)用の入口。彼女には気づかれにくいよう控えめに */}
-        <Link
-          href="/admin"
-          className="mt-10 text-[10px] tracking-widest text-neutral-300 transition-colors hover:text-neutral-400"
-        >
-          管理者ページ
-        </Link>
-      </motion.div>
+      {joined.length > 0 && (
+        <section className="relative z-10 mt-12">
+          <h2 className="mb-3 text-sm font-medium text-neutral-500">
+            参加中の旅
+          </h2>
+          <ul className="space-y-3">
+            {joined.map((trip) => (
+              <li key={trip.id}>
+                <Link
+                  href={`/t/${trip.slug}`}
+                  className="block rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm"
+                >
+                  <p className="font-medium">{trip.title}</p>
+                  {trip.date && (
+                    <p className="mt-1 text-xs text-neutral-400">{trip.date}</p>
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <TabBar />
     </main>
   );
 }

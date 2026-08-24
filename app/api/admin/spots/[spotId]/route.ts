@@ -1,7 +1,8 @@
-// A4の裏側: スポット単体の更新・削除
+// スポット単体の更新・削除
+// スポットが属する旅の所有者だけが操作できる
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
-import { isAdminRequest } from "@/lib/admin-api";
+import { getAccess } from "@/lib/access";
 
 type Ctx = { params: Promise<{ spotId: string }> };
 
@@ -17,11 +18,27 @@ const EDITABLE = [
   "is_secret",
 ] as const;
 
+// このスポットの持ち主かどうかを確かめる
+async function ownerOf(spotId: string) {
+  const supabase = createServerClient();
+  const { data: spot } = await supabase
+    .from("spots")
+    .select("id, trip_id")
+    .eq("id", spotId)
+    .single();
+  if (!spot) return null;
+  const access = await getAccess(spot.trip_id);
+  return access?.isOwner ? { supabase, spot } : null;
+}
+
 export async function PATCH(req: Request, { params }: Ctx) {
-  if (!isAdminRequest(req)) {
+  const { spotId } = await params;
+  const owned = await ownerOf(spotId);
+  if (!owned) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const { spotId } = await params;
+  const { supabase } = owned;
+
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const update: Record<string, unknown> = {};
   for (const key of EDITABLE) {
@@ -30,7 +47,6 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if (Object.keys(update).length === 0) {
     return NextResponse.json({ error: "no fields" }, { status: 400 });
   }
-  const supabase = createServerClient();
   const { data: spot, error } = await supabase
     .from("spots")
     .update(update)
@@ -42,11 +58,12 @@ export async function PATCH(req: Request, { params }: Ctx) {
 }
 
 export async function DELETE(req: Request, { params }: Ctx) {
-  if (!isAdminRequest(req)) {
+  const { spotId } = await params;
+  const owned = await ownerOf(spotId);
+  if (!owned) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const { spotId } = await params;
-  const supabase = createServerClient();
+  const { supabase } = owned;
 
   // スポットの写真ファイルも掃除(DB行はcascade)
   const { data: photos } = await supabase

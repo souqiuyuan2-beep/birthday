@@ -7,7 +7,6 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { getTripToken } from "@/lib/auth-client";
 
 type Item = {
   id: string;
@@ -27,11 +26,8 @@ export default function PhotoGrid({ items }: { items: Item[] }) {
   // 拡大表示から写真を削除する(達成状態は変わらない)
   async function deletePhoto(photo: Item) {
     if (!confirm("この写真を削除する?")) return;
-    const token = getTripToken(slug);
-    if (!token) return;
     const res = await fetch(`/api/t/${slug}/photos/${photo.id}`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
     });
     if (res.ok) {
       setPhotos((list) => list.filter((p) => p.id !== photo.id));

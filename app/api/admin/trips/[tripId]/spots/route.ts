@@ -1,7 +1,7 @@
 // A4の裏側: スポットの追加・並び替え
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
-import { isAdminRequest } from "@/lib/admin-api";
+import { getAccess } from "@/lib/access";
 
 type Ctx = { params: Promise<{ tripId: string }> };
 
@@ -11,10 +11,11 @@ type Ctx = { params: Promise<{ tripId: string }> };
 //                       親の次の番目に置かれる
 //   どちらも未指定なら末尾に新しい番目として追加
 export async function POST(req: Request, { params }: Ctx) {
-  if (!isAdminRequest(req)) {
+  const { tripId } = await params;
+  const access = await getAccess(tripId);
+  if (!access?.isOwner) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const { tripId } = await params;
   const { sortOrder, parentSpotId } = (await req.json().catch(() => ({}))) as {
     sortOrder?: number;
     parentSpotId?: string;
@@ -143,10 +144,11 @@ export async function POST(req: Request, { params }: Ctx) {
 // PUT { orderedGroups: string[][] } → グループ(番目)単位で sort_order を振り直す。
 // 2択の選択肢は同じグループに入れて渡す(同じ sort_order が付く)
 export async function PUT(req: Request, { params }: Ctx) {
-  if (!isAdminRequest(req)) {
+  const { tripId } = await params;
+  const access = await getAccess(tripId);
+  if (!access?.isOwner) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const { tripId } = await params;
   const { orderedGroups } = (await req.json().catch(() => ({}))) as {
     orderedGroups?: string[][];
   };
