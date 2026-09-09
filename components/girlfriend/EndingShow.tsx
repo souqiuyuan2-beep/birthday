@@ -11,6 +11,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Handwriting from "@/components/girlfriend/Handwriting";
@@ -162,7 +163,7 @@ export default function EndingShow({
   const showBook = stage === "appear" || stage === "book" || stage === "closing";
 
   return (
-    <main className="fixed inset-0 overflow-hidden bg-[#0b0d12] text-white">
+    <main className="fixed inset-0 z-50 overflow-hidden bg-[#0b0d12] text-white">
       {bgmUrl && <audio ref={audioRef} src={bgmUrl} loop preload="auto" />}
 
       {/* 暖かい光(控えめ。本より後ろに置く) */}
@@ -402,6 +403,15 @@ export default function EndingShow({
           </button>
         </div>
       )}
+
+      {/* 全画面ではタブを覆い、どの段階でも旅のホームへ戻れる導線を残す */}
+      <Link
+        href={`/t/${slug}`}
+        className="absolute left-3 top-[calc(0.75rem+env(safe-area-inset-top))] z-50 flex min-h-11 items-center rounded-full px-3 text-xs text-white/70 transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+      >
+        <span aria-hidden="true" className="mr-2">←</span>
+        旅のホームへ
+      </Link>
 
       {/* とばす(演出中のみ・控えめに) */}
       {(stage === "book" || stage === "appear") && (
