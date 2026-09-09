@@ -9,7 +9,6 @@ import { useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { markOpeningSeen } from "@/lib/opening";
-import Sparkles from "@/components/girlfriend/Sparkles";
 import Handwriting from "@/components/girlfriend/Handwriting";
 
 type Stage = "sealed" | "opening" | "letter";
@@ -49,7 +48,6 @@ export default function OpeningLetter({
 
   return (
     <main className="relative mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center px-8 py-12">
-      <Sparkles count={16} />
       {bgmUrl && <audio ref={audioRef} src={bgmUrl} loop preload="auto" />}
 
       {stage !== "letter" ? (
@@ -62,7 +60,7 @@ export default function OpeningLetter({
             transition={{ duration: 0.9, ease: "easeOut" }}
             className="relative w-full max-w-xs"
             aria-label="手紙を開く"
-            style={{ perspective: 900, animation: stage === "sealed" ? "floaty 3.6s ease-in-out infinite" : "none" }}
+            style={{ perspective: 900 }}
           >
             <div className="relative aspect-[4/3] w-full">
               {/* 封筒の本体 */}
@@ -89,10 +87,15 @@ export default function OpeningLetter({
               </div>
               {/* フラップ(3Dで開く) */}
               <motion.div
-                animate={stage === "opening" ? { rotateX: 180 } : { rotateX: 0 }}
+                animate={
+                  stage === "opening" ? { rotateX: 180 } : { rotateX: 0 }
+                }
                 transition={{ duration: 0.9, ease: [0.65, 0, 0.35, 1] }}
                 className="absolute inset-x-0 top-0 z-10 h-[52%] origin-top"
-                style={{ transformStyle: "preserve-3d", backfaceVisibility: "hidden" }}
+                style={{
+                  transformStyle: "preserve-3d",
+                  backfaceVisibility: "hidden",
+                }}
               >
                 <div
                   className="h-full w-full"
@@ -135,7 +138,7 @@ export default function OpeningLetter({
             animate={{ opacity: stage === "sealed" ? 1 : 0 }}
             transition={{ delay: stage === "sealed" ? 1.4 : 0, duration: 0.8 }}
             onClick={open}
-            className="mt-6 w-full max-w-xs rounded-2xl bg-theme py-4 text-base font-medium text-white shadow-md transition-transform active:scale-[0.98]"
+            className="button-primary mt-6 w-full max-w-xs"
           >
             開く
           </motion.button>
@@ -147,7 +150,7 @@ export default function OpeningLetter({
           transition={{ duration: 0.7, ease: "easeOut" }}
           className="relative z-10 w-full"
         >
-          <div className="rounded-2xl border border-neutral-200 bg-white/95 p-7 shadow-lg">
+          <div className="border border-rule bg-[#fffdf8] p-7">
             <div>
               {/* 手で書いているように、段落を順に1文字ずつ綴っていく */}
               {paragraphs.map((paragraph, i) =>
@@ -158,7 +161,7 @@ export default function OpeningLetter({
                     onDone={() => setWrittenCount((c) => Math.max(c, i + 1))}
                     className="font-serif leading-loose text-neutral-800 [&:not(:first-child)]:mt-5"
                   />
-                ) : null
+                ) : null,
               )}
               <motion.div
                 initial={{ opacity: 0 }}
@@ -166,10 +169,7 @@ export default function OpeningLetter({
                 transition={{ duration: 1.2 }}
                 className="mt-8"
               >
-                <button
-                  onClick={start}
-                  className="w-full rounded-2xl bg-theme py-4 text-base font-medium text-white shadow-md transition-transform active:scale-[0.98]"
-                >
+                <button onClick={start} className="button-primary w-full">
                   旅を始める
                 </button>
               </motion.div>

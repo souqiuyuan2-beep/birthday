@@ -4,19 +4,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Icon from "@/components/ui/Icon";
 
 const TABS = [
-  { href: "/", label: "参加", icon: "✈" },
-  { href: "/create", label: "作る", icon: "✎" },
-  { href: "/mypage", label: "マイページ", icon: "☺" },
+  { href: "/", label: "参加", icon: "route" },
+  { href: "/create", label: "作る", icon: "edit" },
+  { href: "/mypage", label: "マイページ", icon: "user" },
 ] as const;
 
 export default function TabBar() {
   const pathname = usePathname() ?? "/";
 
   return (
-    <nav aria-label="メインメニュー" className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200 bg-white/95 backdrop-blur">
-      <ul className="mx-auto flex max-w-md">
+    <nav aria-label="メインメニュー" className="tab-bar">
+      <ul>
         {TABS.map((tab) => {
           const active =
             tab.href === "/"
@@ -27,20 +28,15 @@ export default function TabBar() {
               <Link
                 href={tab.href}
                 aria-current={active ? "page" : undefined}
-                className={
-                  "flex flex-col items-center gap-0.5 py-2.5 text-[10px] tracking-wider transition-colors " +
-                  (active ? "text-theme-deep" : "text-neutral-400")
-                }
+                className="tab-link"
               >
-                <span aria-hidden="true" className="text-base">{tab.icon}</span>
+                <Icon name={tab.icon} />
                 {tab.label}
               </Link>
             </li>
           );
         })}
       </ul>
-      {/* iPhoneのホームバーぶんの余白 */}
-      <div className="h-[env(safe-area-inset-bottom)]" />
     </nav>
   );
 }

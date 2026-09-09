@@ -9,7 +9,7 @@ import { useParams, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { compressImage } from "@/lib/image";
 import { uploadPhoto } from "@/lib/upload";
-import Confetti from "@/components/girlfriend/Confetti";
+import Icon from "@/components/ui/Icon";
 
 type PhotoItem = { id: string; url: string };
 
@@ -88,7 +88,10 @@ export default function MissionCard({
             setState({ phase: "uploading", percent, index, total }),
         });
         if (result.signedUrl) {
-          setPhotos((list) => [...list, { id: result.photoId, url: result.signedUrl! }]);
+          setPhotos((list) => [
+            ...list,
+            { id: result.photoId, url: result.signedUrl! },
+          ]);
         }
         if (result.completedNow) {
           completedNow = true;
@@ -139,10 +142,10 @@ export default function MissionCard({
   const busy = state.phase === "compressing" || state.phase === "uploading";
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col px-6 py-8">
+    <main className="journal-page journey-page flex flex-col">
       <button
         onClick={() => router.push(`/t/${slug}`)}
-        className="mb-6 self-start text-sm text-neutral-400"
+        className="back-link self-start"
       >
         ← 戻る
       </button>
@@ -151,18 +154,20 @@ export default function MissionCard({
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm"
+        className="mission-sheet"
       >
-        <h1 className="font-serif text-xl font-semibold tracking-wide">
-          {displayName}
-        </h1>
-        <p className="mt-4 leading-relaxed text-neutral-700">{mission}</p>
+        <p className="eyebrow mb-3">
+          {isDone ? "A MEMORY COLLECTED" : "A MOMENT TO COLLECT"}
+        </p>
+        <h1 className="page-title">{displayName}</h1>
+        <p className="mt-6 text-[15px] leading-loose text-ink">{mission}</p>
 
         {hint && (
           <div className="mt-4">
             <button
               onClick={() => setShowHint((v) => !v)}
-              className="text-sm text-theme underline underline-offset-4"
+              className="text-link text-theme underline"
+              aria-expanded={showHint}
             >
               {showHint ? "ヒントを閉じる" : "ヒントを見る"}
             </button>
@@ -182,7 +187,7 @@ export default function MissionCard({
         )}
 
         {message && (
-          <p className="mt-5 border-t border-neutral-100 pt-4 font-serif text-sm leading-relaxed text-neutral-500">
+          <p className="mt-7 border-l-2 border-rule pl-5 font-serif text-sm leading-loose text-muted">
             {message}
           </p>
         )}
@@ -205,7 +210,7 @@ export default function MissionCard({
               <img
                 src={photo.url}
                 alt={`撮った写真 ${i + 1}`}
-                className="h-28 w-28 rounded-xl object-cover shadow-sm"
+                className="h-36 w-28 object-cover"
               />
               <button
                 onClick={() => deletePhoto(photo)}
@@ -275,7 +280,7 @@ export default function MissionCard({
           <button
             onClick={completeWithoutPhoto}
             disabled={busy}
-            className="mb-3 w-full rounded-2xl bg-theme py-4 text-base font-medium text-white shadow-md transition-all active:scale-[0.98] disabled:opacity-40"
+            className="button-primary mb-3 w-full"
           >
             {completeLabel}
           </button>
@@ -285,12 +290,11 @@ export default function MissionCard({
           onClick={() => libraryInputRef.current?.click()}
           disabled={busy}
           className={
-            "w-full rounded-2xl py-4 text-base font-medium transition-all active:scale-[0.98] disabled:opacity-40 " +
-            (isDone || !photoRequired
-              ? "border-2 border-theme bg-white text-theme-deep"
-              : "bg-theme text-white shadow-md")
+            "w-full " +
+            (isDone || !photoRequired ? "button-secondary" : "button-primary")
           }
         >
+          <Icon name="photo" />
           写真を追加する
         </button>
         {!photoRequired && !isDone && (
@@ -304,75 +308,57 @@ export default function MissionCard({
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/90 px-8 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-y-auto bg-paper px-8 py-10"
         >
-          <Confetti count={44} />
-          <div className="relative">
-            {/* スタンプがドンと押される */}
+          <div className="w-full max-w-sm text-center">
+            <p className="eyebrow mb-7">ONE MORE MEMORY</p>
             <motion.div
-              initial={{ scale: 2.6, opacity: 0, rotate: -20 }}
-              animate={{ scale: 1, opacity: 1, rotate: -8 }}
-              transition={{ type: "spring", stiffness: 260, damping: 15 }}
-              className="flex h-36 w-36 items-center justify-center rounded-full border-4 border-theme bg-white shadow-lg"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-theme text-theme"
             >
-              <span className="font-serif text-2xl font-bold tracking-widest text-theme-deep">
-                達成!
-              </span>
+              <Icon name="check" width="32" height="32" />
             </motion.div>
-            {/* まわりのきらめき */}
-            {[
-              { top: "-14px", left: "-6px", delay: "0.3s" },
-              { top: "6px", right: "-18px", delay: "0.6s" },
-              { bottom: "-10px", left: "10px", delay: "0.9s" },
-            ].map((pos, i) => (
-              <span
-                key={i}
-                aria-hidden
-                className="absolute text-xl text-gold"
-                style={{
-                  ...pos,
-                  animation: `twinkle 1.6s ease-in-out ${pos.delay} infinite`,
-                }}
-              >
-                ✦
+            <motion.p
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="mt-8 text-center font-serif text-2xl leading-loose text-ink"
+            >
+              またひとつ、思い出に。
+              <br />
+              <span className="font-sans text-sm text-muted">
+                ミッションを達成しました。
               </span>
-            ))}
+            </motion.p>
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.9 }}
+              onClick={() => router.push(`/t/${slug}`)}
+              className="button-secondary mt-10 w-full"
+            >
+              ホームへ戻る
+            </motion.button>
+            {/* そのまま次へ進みたい時のショートカット */}
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.1 }}
+              onClick={(e) => {
+                // 押した瞬間に反応を返す(遷移までの間、無反応に見せない)
+                e.currentTarget.style.opacity = "0.6";
+                // 直前の達成を反映してから進む(次が2択なら選択画面へ)
+                router.refresh();
+                router.push(nextHref);
+              }}
+              className="button-primary mt-3 w-full"
+            >
+              {nextLabel}
+              <Icon name="arrow" />
+            </motion.button>
           </div>
-          <motion.p
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="mt-9 text-center text-sm leading-relaxed text-neutral-600"
-          >
-            ミッションクリア!
-            <br />
-            次の場所へ進もう
-          </motion.p>
-          <motion.button
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.9 }}
-            onClick={() => router.push(`/t/${slug}`)}
-            className="mt-10 w-full rounded-2xl bg-theme py-4 text-base font-medium text-white shadow-md transition-transform active:scale-[0.98]"
-          >
-            ホームへ戻る
-          </motion.button>
-          {/* そのまま次へ進みたい時のショートカット */}
-          <motion.button
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.1 }}
-            onClick={(e) => {
-              // 押した瞬間に反応を返す(遷移までの間、無反応に見せない)
-              e.currentTarget.style.opacity = "0.6";
-              // 直前の達成を反映してから進む(次が2択なら選択画面へ)
-              router.refresh();
-              router.push(nextHref);
-            }}
-            className="mt-3 w-full rounded-2xl border-2 border-theme bg-white py-3.5 text-base font-medium text-theme-deep transition-transform active:scale-[0.98]"
-          >
-            {nextLabel}
-          </motion.button>
         </motion.div>
       )}
     </main>

@@ -5,8 +5,7 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import Sparkles from "@/components/girlfriend/Sparkles";
+import Icon from "@/components/ui/Icon";
 import SpecialGift from "@/components/girlfriend/SpecialGift";
 
 type Option = {
@@ -30,7 +29,9 @@ export default function ChoiceCards({
   const [giftDone, setGiftDone] = useState(false);
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
-  const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId);
+  const [selectedId, setSelectedId] = useState<string | null>(
+    initialSelectedId,
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
 
@@ -61,7 +62,7 @@ export default function ChoiceCards({
   }
 
   return (
-    <main className="relative mx-auto flex min-h-dvh max-w-md flex-col px-6 py-8">
+    <main className="journal-page journey-page flex flex-col">
       {/* 選ぶ前に、プレゼントのように画像を見せる */}
       {specialImageUrl && !giftDone && (
         <SpecialGift
@@ -69,70 +70,66 @@ export default function ChoiceCards({
           onDone={() => setGiftDone(true)}
         />
       )}
-      <Sparkles count={10} />
       <button
         onClick={() => router.push(`/t/${slug}`)}
-        className="relative z-10 mb-6 self-start text-sm text-neutral-400"
+        className="back-link self-start"
       >
         ← 戻る
       </button>
 
-      <h1 className="relative z-10 text-center font-serif text-xl font-semibold tracking-widest">
-        {options.length >= 3 ? "どこに行く?" : "どっちに行く?"}
+      <p className="eyebrow">CHOOSE YOUR NEXT STOP</p>
+      <h1 className="page-title mt-3">
+        {options.length >= 3 ? "どこに行く？" : "どっちに行く？"}
       </h1>
-      <p className="mt-2 text-center text-sm text-neutral-500">
-        {options.length >= 3 ? "好きな場所を選んでね" : "好きな方を選んでね"}
+      <p className="description">
+        {options.length >= 3
+          ? "心が向く場所を、ひとつ。"
+          : "今日は、どちらの気分？"}
       </p>
 
-      <div className="relative z-10 mt-8 space-y-4">
-        {options.map((option) => {
+      <div className="mt-8 space-y-3">
+        {options.map((option, index) => {
           const selected = option.id === selectedId;
           return (
             <button
               key={option.id}
               onClick={() => setSelectedId(option.id)}
-              className={
-                "relative w-full rounded-3xl border-2 bg-white p-6 text-left transition-all active:scale-[0.99] " +
-                (selected
-                  ? "border-theme shadow-[0_4px_20px_rgba(168,216,234,0.45)]"
-                  : "border-neutral-200 shadow-sm")
-              }
+              className="choice-option"
+              aria-pressed={selected}
             >
-              {option.secret ? (
-                // 中身を伏せて、選ぶまで分からないようにする
-                <span className="flex flex-col items-center py-4">
-                  <span className="font-serif text-3xl tracking-widest text-theme-deep">
-                    ?
-                  </span>
-                  <span className="mt-3 text-sm text-neutral-500">
-                    えらぶまで ひみつ
-                  </span>
+              <span className="choice-radio">
+                {selected && <Icon name="check" width="14" height="14" />}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="eyebrow mb-2 block">
+                  OPTION {String(index + 1).padStart(2, "0")}
                 </span>
-              ) : (
-                <>
-                  <span className="block font-serif text-lg font-semibold tracking-wide">
-                    {option.displayName}
-                  </span>
-                  <span className="mt-2 block text-sm leading-relaxed text-neutral-600">
-                    {option.mission}
-                  </span>
-                  {option.message && (
-                    <span className="mt-2 block text-xs leading-relaxed text-neutral-400">
-                      {option.message}
+                {option.secret ? (
+                  // 中身を伏せて、選ぶまで分からないようにする
+                  <span className="block">
+                    <span className="block font-serif text-xl">
+                      選ぶまで、秘密。
                     </span>
-                  )}
-                </>
-              )}
-              {selected && (
-                <motion.span
-                  initial={{ scale: 1.6, opacity: 0, rotate: -12 }}
-                  animate={{ scale: 1, opacity: 1, rotate: -6 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 16 }}
-                  className="absolute -right-2 -top-2 flex h-10 w-10 items-center justify-center rounded-full border-[3px] border-theme bg-white text-lg"
-                >
-                  ✓
-                </motion.span>
-              )}
+                    <span className="mt-2 block text-xs text-muted">
+                      この先に待つ、小さなサプライズ。
+                    </span>
+                  </span>
+                ) : (
+                  <>
+                    <span className="block font-serif text-lg font-semibold tracking-wide">
+                      {option.displayName}
+                    </span>
+                    <span className="mt-2 block text-sm leading-relaxed text-neutral-600">
+                      {option.mission}
+                    </span>
+                    {option.message && (
+                      <span className="mt-2 block text-xs leading-relaxed text-neutral-400">
+                        {option.message}
+                      </span>
+                    )}
+                  </>
+                )}
+              </span>
             </button>
           );
         })}
@@ -148,9 +145,10 @@ export default function ChoiceCards({
         <button
           onClick={confirm}
           disabled={!selectedId || busy}
-          className="w-full rounded-2xl bg-theme py-4 text-base font-medium text-white transition-opacity disabled:opacity-40"
+          className="button-primary w-full justify-between"
         >
-          {busy ? "決めています…" : "ここにする!"}
+          {busy ? "決めています…" : "ここにする"}
+          <Icon name="arrow" />
         </button>
       </div>
     </main>

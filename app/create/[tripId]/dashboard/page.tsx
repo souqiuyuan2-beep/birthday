@@ -10,7 +10,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { supabase } from "@/lib/supabase/client";
-
+import JournalHeader from "@/components/ui/JournalHeader";
 
 type FeedPhoto = {
   id: string;
@@ -52,7 +52,7 @@ export default function DashboardPage() {
           table: "photos",
           filter: `trip_id=eq.${tripId}`,
         },
-        () => void load()
+        () => void load(),
       )
       .on(
         "postgres_changes",
@@ -62,7 +62,7 @@ export default function DashboardPage() {
           table: "progress",
           filter: `trip_id=eq.${tripId}`,
         },
-        () => void load()
+        () => void load(),
       )
       .subscribe((status) => setLive(status === "SUBSCRIBED"));
 
@@ -75,15 +75,22 @@ export default function DashboardPage() {
   }, [tripId, load]);
 
   return (
-    <main className="mx-auto min-h-dvh max-w-md px-5 py-8">
-      <header className="mb-6 flex items-center justify-between">
+    <main className="journal-page editor-page">
+      <JournalHeader
+        eyebrow="ALONG THE WAY"
+        title="旅の様子。"
+        description="届く写真とともに、ふたりの歩みを。"
+      />
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <Link href={`/create/${tripId}`} className="text-sm text-neutral-400">
           ← 旅行編集
         </Link>
         <span
           className={
             "rounded-full px-2.5 py-1 text-xs " +
-            (live ? "bg-green-100 text-green-700" : "bg-neutral-200 text-neutral-500")
+            (live
+              ? "bg-green-100 text-green-700"
+              : "bg-neutral-200 text-neutral-500")
           }
         >
           {live ? "● リアルタイム更新中" : "30秒ごとに更新"}
@@ -94,8 +101,8 @@ export default function DashboardPage() {
         <p className="text-sm text-neutral-400">読み込み中…</p>
       ) : (
         <>
-          <section className="rounded-2xl border border-neutral-200 bg-white p-5">
-            <p className="text-3xl font-semibold">
+          <section className="border-y border-rule py-7">
+            <p className="font-serif text-4xl">
               {data.doneCount}
               <span className="text-lg font-normal text-neutral-400">
                 {" "}
@@ -104,7 +111,7 @@ export default function DashboardPage() {
             </p>
             <p className="mt-2 text-sm text-neutral-600">
               {data.allDone
-                ? "全ミッション達成!🎉"
+                ? "すべてのミッションを達成しました"
                 : data.currentName
                   ? `挑戦中: ${data.currentName}`
                   : "まだ始まっていません"}

@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import Icon from "@/components/ui/Icon";
 
 export default function JoinForm() {
   const router = useRouter();
@@ -39,53 +39,60 @@ export default function JoinForm() {
     }
   }
 
-  const inputCls =
-    "w-full rounded-2xl border bg-white/90 px-5 py-4 text-center outline-none transition-all";
-
   return (
-    <motion.form
-      onSubmit={submit}
-      animate={error ? { x: [0, -8, 8, -6, 6, 0] } : {}}
-      transition={{ duration: 0.4 }}
-      className="space-y-3"
-    >
-      <input
-        type="text"
-        value={tag}
-        onChange={(e) => {
-          setTag(e.target.value);
-          setError(null);
-        }}
-        placeholder="タグ(例: A3K9PZ7M)"
-        autoCapitalize="characters"
-        autoCorrect="off"
-        spellCheck={false}
-        className={
-          inputCls +
-          " text-lg tracking-[0.3em] " +
-          (error ? "border-red-300" : "border-neutral-200 focus:border-theme")
-        }
-      />
-      {needPassword && (
+    <form onSubmit={submit} className="space-y-4">
+      <div>
+        <label htmlFor="join-code" className="field-label">
+          旅の参加コード
+        </label>
         <input
-          type="password"
-          value={password}
+          id="join-code"
+          type="text"
+          value={tag}
           onChange={(e) => {
-            setPassword(e.target.value);
+            setTag(e.target.value);
             setError(null);
           }}
-          placeholder="パスワード"
-          className={inputCls + " border-neutral-200 focus:border-theme"}
+          placeholder="例：A3K9PZ7M"
+          autoCapitalize="characters"
+          autoCorrect="off"
+          spellCheck={false}
+          aria-invalid={!!error}
+          aria-describedby={error ? "join-error" : undefined}
+          className="field font-mono tracking-[0.2em]"
         />
+      </div>
+      {needPassword && (
+        <div>
+          <label htmlFor="join-password" className="field-label">
+            旅のパスワード
+          </label>
+          <input
+            id="join-password"
+            type="password"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setError(null);
+            }}
+            placeholder="パスワード"
+            className="field"
+          />
+        </div>
       )}
-      {error && <p className="text-center text-sm text-red-400">{error}</p>}
+      {error && (
+        <p id="join-error" role="alert" className="error-note">
+          {error}
+        </p>
+      )}
       <button
         type="submit"
         disabled={busy || tag.trim() === ""}
-        className="w-full rounded-2xl bg-theme py-4 text-base font-medium text-white shadow-md transition-transform active:scale-[0.98] disabled:opacity-40"
+        className="button-primary w-full justify-between"
       >
         {busy ? "確認しています…" : "旅に参加する"}
+        <Icon name="arrow" />
       </button>
-    </motion.form>
+    </form>
   );
 }

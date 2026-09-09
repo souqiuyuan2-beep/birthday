@@ -12,7 +12,7 @@ export default function LogoutButton() {
         router.replace("/login");
         router.refresh();
       }}
-      className="w-full rounded-2xl border border-neutral-300 py-3.5 text-sm text-neutral-600"
+      className="button-secondary w-full"
     >
       ログアウト
     </button>

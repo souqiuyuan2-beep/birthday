@@ -40,7 +40,7 @@ export default function PhotoGrid({ items }: { items: Item[] }) {
 
   return (
     <>
-      <div className="mb-4 flex justify-center gap-2">
+      <div className="album-mode">
         {(
           [
             { value: "grid", label: "一覧" },
@@ -50,12 +50,7 @@ export default function PhotoGrid({ items }: { items: Item[] }) {
           <button
             key={m.value}
             onClick={() => setMode(m.value)}
-            className={
-              "rounded-full px-4 py-1.5 text-xs transition-colors " +
-              (mode === m.value
-                ? "bg-theme text-white shadow-sm"
-                : "border border-neutral-300 text-neutral-500")
-            }
+            aria-pressed={mode === m.value}
           >
             {m.label}
           </button>
@@ -63,16 +58,27 @@ export default function PhotoGrid({ items }: { items: Item[] }) {
       </div>
 
       {mode === "grid" ? (
-        <div className="grid grid-cols-3 gap-2">
+        <div className="album-grid">
           {photos.map((item, i) => (
-            <button key={item.id} onClick={() => setOpenIndex(i)}>
+            <button
+              key={item.id}
+              onClick={() => setOpenIndex(i)}
+              className="text-left"
+              aria-label={`${item.spotName}の写真を拡大`}
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={item.url}
                 alt={item.spotName}
                 loading="lazy"
-                className="aspect-square w-full rounded-lg object-cover"
+                className="block"
               />
+              <span className="mt-2 flex items-start gap-2">
+                <span className="font-mono text-[10px] text-theme">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <span className="text-xs text-muted">{item.spotName}</span>
+              </span>
             </button>
           ))}
         </div>
@@ -80,13 +86,13 @@ export default function PhotoGrid({ items }: { items: Item[] }) {
         <div className="-mx-6 flex snap-x snap-mandatory gap-5 overflow-x-auto px-6 pb-4">
           {photos.map((item) => (
             <figure key={item.id} className="w-full shrink-0 snap-center">
-              <div className="rounded-2xl border border-neutral-200 bg-white p-3 pb-4 shadow-md">
+              <div className="border border-rule bg-[#fffdf8] p-4 pb-6">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={item.url}
                   alt={item.spotName}
                   loading="lazy"
-                  className="aspect-[3/4] w-full rounded-xl object-cover"
+                  className="aspect-[3/4] w-full object-cover"
                 />
                 <figcaption className="mt-3 text-center">
                   <span className="font-serif text-sm text-neutral-700">

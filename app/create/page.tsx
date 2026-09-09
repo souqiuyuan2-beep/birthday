@@ -5,7 +5,8 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import TabBar from "@/components/TabBar";
+import JournalHeader from "@/components/ui/JournalHeader";
+import Icon from "@/components/ui/Icon";
 import type { Trip } from "@/lib/supabase/types";
 
 export default function CreatePage() {
@@ -42,7 +43,8 @@ export default function CreatePage() {
   }
 
   async function deleteTrip(trip: Trip) {
-    if (!confirm(`「${trip.title}」を削除しますか?写真もすべて消えます。`)) return;
+    if (!confirm(`「${trip.title}」を削除しますか?写真もすべて消えます。`))
+      return;
     setBusy(true);
     await fetch(`/api/admin/trips/${trip.id}`, { method: "DELETE" });
     await load();
@@ -57,70 +59,97 @@ export default function CreatePage() {
   }
 
   return (
-    <main className="mx-auto min-h-dvh max-w-md px-5 pb-24 pt-8">
-      <header className="mb-6 flex items-center justify-between">
-        <h1 className="font-serif text-lg font-semibold tracking-wider">
+    <main className="journal-page">
+      <JournalHeader
+        eyebrow="PLAN A JOURNEY"
+        title="旅を、贈ろう。"
+        description="行き先も、手紙も。相手を思い浮かべながら。"
+      />
+      <div className="mb-7 flex items-center justify-between gap-4">
+        <h2 className="text-sm">
           作った旅
-        </h1>
-        <button
-          onClick={createTrip}
-          disabled={busy}
-          className="rounded-lg bg-neutral-800 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
-        >
-          + 新しい旅
+          {trips && (
+            <span className="ml-3 font-mono text-xs text-muted">
+              {String(trips.length).padStart(2, "0")}
+            </span>
+          )}
+        </h2>
+        <button onClick={createTrip} disabled={busy} className="button-primary">
+          <Icon name="plus" width="16" height="16" /> 新しい旅
         </button>
-      </header>
+      </div>
 
       {trips === null ? (
         <p className="text-sm text-neutral-400">読み込み中…</p>
       ) : trips.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-neutral-300 p-8 text-center">
-          <p className="text-sm text-neutral-500">まだ旅がありません</p>
+        <div className="empty-note">
+          <p className="font-serif text-xl text-ink">どんな一日にしよう。</p>
+          <p className="mt-3">
+            まずは旅の名前を決めるところから。
+            <br />
+            行き先や手紙は、後から少しずつ追加できます。
+          </p>
           <button
             onClick={createTrip}
             disabled={busy}
-            className="mt-4 rounded-lg bg-neutral-800 px-5 py-2.5 text-sm font-medium text-white disabled:opacity-40"
+            className="text-link mt-3 underline"
           >
             最初の旅を作る
           </button>
         </div>
       ) : (
-        <ul className="space-y-3">
-          {trips.map((trip) => (
-            <li
-              key={trip.id}
-              className="rounded-2xl border border-neutral-200 bg-white p-4"
-            >
-              <Link href={`/create/${trip.id}`} className="block">
-                <p className="font-medium">{trip.title}</p>
-                <p className="mt-1 text-xs text-neutral-400">
-                  {trip.date ?? "日付未定"}
-                </p>
+        <ul className="journey-list">
+          {trips.map((trip, index) => (
+            <li key={trip.id} className="create-item">
+              <Link
+                href={`/create/${trip.id}`}
+                className="flex items-center gap-5"
+              >
+                <span className="journey-number">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="journey-title">{trip.title}</p>
+                  <p className="date-label">
+                    {trip.date?.replaceAll("-", ".") ?? "日付未定"}
+                  </p>
+                </div>
+                <Icon name="arrow" className="shrink-0 text-muted" />
               </Link>
 
               {/* 相手に渡すタグ */}
               <button
                 onClick={() => copyTag(trip)}
-                className="mt-3 flex w-full items-center justify-between rounded-xl bg-neutral-100 px-4 py-2.5"
+                className="tag-strip"
+                aria-label={`「${trip.title}」の参加コードをコピー`}
               >
-                <span className="text-xs text-neutral-500">参加タグ</span>
-                <span className="font-mono text-sm tracking-[0.2em] text-neutral-800">
-                  {copiedId === trip.id ? "コピーしました" : (trip.tag ?? "—")}
+                <span>参加コード</span>
+                <span className="flex items-center gap-3">
+                  <code>
+                    {copiedId === trip.id
+                      ? "コピーしました"
+                      : (trip.tag ?? "—")}
+                  </code>
+                  <Icon
+                    name={copiedId === trip.id ? "check" : "copy"}
+                    width="15"
+                    height="15"
+                  />
                 </span>
               </button>
 
-              <div className="mt-3 flex gap-2 text-xs">
+              <div className="item-actions">
                 <button
                   onClick={() => duplicateTrip(trip.id)}
                   disabled={busy}
-                  className="rounded-md border border-neutral-300 px-3 py-1.5"
+                  className="text-link"
                 >
                   複製
                 </button>
                 <button
                   onClick={() => deleteTrip(trip)}
                   disabled={busy}
-                  className="ml-auto rounded-md border border-red-200 px-3 py-1.5 text-red-500"
+                  className="text-link text-[#965143]"
                 >
                   削除
                 </button>
@@ -129,8 +158,6 @@ export default function CreatePage() {
           ))}
         </ul>
       )}
-
-      <TabBar />
     </main>
   );
 }

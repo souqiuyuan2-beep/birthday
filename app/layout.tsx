@@ -19,12 +19,16 @@ const sansJp = Zen_Kaku_Gothic_New({
 });
 
 export const metadata: Metadata = {
-  title: "旅の記録",
-  description: "",
+  title: "ふたりの旅",
+  description: "旅を贈る。一緒に巡る。思い出を一冊に残す。",
   robots: { index: false, follow: false }, // 検索エンジンに載せない
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="ja" className={`${serifJp.variable} ${sansJp.variable}`}>
       <body className="font-sans">{children}</body>

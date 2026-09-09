@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import JournalHeader from "@/components/ui/JournalHeader";
 
 import type { Spot } from "@/lib/supabase/types";
 
@@ -48,20 +49,20 @@ export default function SpotsEditPage() {
       byKey.set(key, list);
     }
     return [...byKey.values()].sort(
-      (a, b) => a[0].sort_order - b[0].sort_order
+      (a, b) => a[0].sort_order - b[0].sort_order,
     );
   }, [spots]);
 
   // 分岐の見出し用に、スポットidから名前を引けるようにする
   const spotName = useMemo(
     () => new Map((spots ?? []).map((s) => [s.id, s.name])),
-    [spots]
+    [spots],
   );
 
   // 「旅行先」チェックが付いたグループの選択肢 = ドロワーに並ぶ行き先
   const destinations = useMemo(
     () => (spots ?? []).filter((s) => s.is_destination),
-    [spots]
+    [spots],
   );
 
   // 表示するグループ:
@@ -83,7 +84,7 @@ export default function SpotsEditPage() {
 
   function setField<K extends keyof Spot>(id: string, key: K, value: Spot[K]) {
     setSpots((list) =>
-      (list ?? []).map((s) => (s.id === id ? { ...s, [key]: value } : s))
+      (list ?? []).map((s) => (s.id === id ? { ...s, [key]: value } : s)),
     );
   }
 
@@ -168,7 +169,9 @@ export default function SpotsEditPage() {
   async function saveSpot(spot: Spot) {
     if (
       doneIds.has(spot.id) &&
-      !confirm("このスポットは達成済みです。編集すると彼女側の表示も変わりますが保存しますか?")
+      !confirm(
+        "このスポットは達成済みです。編集すると彼女側の表示も変わりますが保存しますか?",
+      )
     ) {
       return;
     }
@@ -219,13 +222,15 @@ export default function SpotsEditPage() {
     // 楽観的更新: sort_orderを振り直したspots配列を作る
     setSpots(
       next.flatMap((options, i) =>
-        options.map((s) => ({ ...s, sort_order: i + 1 }))
-      )
+        options.map((s) => ({ ...s, sort_order: i + 1 })),
+      ),
     );
     await fetch(`/api/admin/trips/${tripId}/spots`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderedGroups: next.map((g) => g.map((s) => s.id)) }),
+      body: JSON.stringify({
+        orderedGroups: next.map((g) => g.map((s) => s.id)),
+      }),
     });
   }
 
@@ -235,8 +240,13 @@ export default function SpotsEditPage() {
   const viewingName = viewSpotId ? spotName.get(viewSpotId) : null;
 
   return (
-    <main className="mx-auto min-h-dvh max-w-md px-5 py-8">
-      <header className="mb-4 flex items-center justify-between">
+    <main className="journal-page editor-page">
+      <JournalHeader
+        eyebrow="DESIGN THE ITINERARY"
+        title="行き先を編む。"
+        description="選ぶ楽しみを、旅のしおりに。"
+      />
+      <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           {/* 旅行先の切り替え(ドロワー) */}
           <button
@@ -245,10 +255,7 @@ export default function SpotsEditPage() {
           >
             ☰ <span className="text-xs">切替</span>
           </button>
-          <Link
-            href={`/create/${tripId}`}
-            className="text-sm text-neutral-400"
-          >
+          <Link href={`/create/${tripId}`} className="text-sm text-neutral-400">
             ← 旅行編集
           </Link>
         </div>
@@ -384,7 +391,9 @@ export default function SpotsEditPage() {
                     {isPair && (
                       <span className="ml-2 rounded bg-sky-100 px-1.5 py-0.5 text-xs font-medium text-sky-700">
                         {options.length}択{" "}
-                        {chosenSpot ? `(「${chosenSpot.name}」を選択済み)` : "(未選択)"}
+                        {chosenSpot
+                          ? `(「${chosenSpot.name}」を選択済み)`
+                          : "(未選択)"}
                       </span>
                     )}
                   </span>
@@ -398,7 +407,7 @@ export default function SpotsEditPage() {
                         onChange={(e) =>
                           toggleDestination(
                             options[0].sort_order,
-                            e.target.checked
+                            e.target.checked,
                           )
                         }
                       />
@@ -434,7 +443,9 @@ export default function SpotsEditPage() {
                       {/* 見出し行。タップで詳細を開閉する(普段は畳んで一覧を見やすく) */}
                       <button
                         onClick={() =>
-                          setOpenSpotId((id) => (id === spot.id ? null : spot.id))
+                          setOpenSpotId((id) =>
+                            id === spot.id ? null : spot.id,
+                          )
                         }
                         className="flex w-full items-center gap-2 px-4 py-3 text-left"
                       >
@@ -467,105 +478,129 @@ export default function SpotsEditPage() {
                       </button>
 
                       {openSpotId === spot.id && (
-                      <div className="space-y-2.5 border-t border-neutral-100 p-4">
-                        <input
-                          className={inputCls}
-                          placeholder="スポット名"
-                          value={spot.name}
-                          onChange={(e) => setField(spot.id, "name", e.target.value)}
-                        />
-                        <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-                          <label className="flex items-center gap-1.5 text-xs text-neutral-600">
-                            <input
-                              type="checkbox"
-                              checked={spot.reveal_name}
-                              onChange={(e) =>
-                                setField(spot.id, "reveal_name", e.target.checked)
-                              }
-                            />
-                            名前を先に見せる
-                          </label>
-                          <label className="flex items-center gap-1.5 text-xs text-neutral-600">
-                            <input
-                              type="checkbox"
-                              checked={spot.photo_required}
-                              onChange={(e) =>
-                                setField(spot.id, "photo_required", e.target.checked)
-                              }
-                            />
-                            写真を必須にする
-                          </label>
-                          {/* 選ぶまで中身を伏せて、ワクワク感を作る */}
-                          <label className="flex items-center gap-1.5 text-xs text-neutral-600">
-                            <input
-                              type="checkbox"
-                              checked={spot.is_secret}
-                              onChange={(e) =>
-                                setField(spot.id, "is_secret", e.target.checked)
-                              }
-                            />
-                            シークレットにする
-                          </label>
-                        </div>
-                        {/* 写真不要のときだけ、達成ボタンの文言を自由に決められる */}
-                        {!spot.photo_required && (
+                        <div className="space-y-2.5 border-t border-neutral-100 p-4">
                           <input
                             className={inputCls}
-                            placeholder="達成ボタンの文言(既定: ここに来た!)"
-                            value={spot.complete_label ?? ""}
+                            placeholder="スポット名"
+                            value={spot.name}
                             onChange={(e) =>
-                              setField(spot.id, "complete_label", e.target.value)
+                              setField(spot.id, "name", e.target.value)
                             }
                           />
-                        )}
-                        <textarea
-                          className={inputCls}
-                          rows={2}
-                          placeholder="ミッション本文"
-                          value={spot.mission}
-                          onChange={(e) => setField(spot.id, "mission", e.target.value)}
-                        />
-                        <input
-                          className={inputCls}
-                          placeholder="ヒント(任意)"
-                          value={spot.hint ?? ""}
-                          onChange={(e) => setField(spot.id, "hint", e.target.value)}
-                        />
-                        <input
-                          className={inputCls}
-                          placeholder="一言メッセージ(任意)"
-                          value={spot.message ?? ""}
-                          onChange={(e) => setField(spot.id, "message", e.target.value)}
-                        />
+                          <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                            <label className="flex items-center gap-1.5 text-xs text-neutral-600">
+                              <input
+                                type="checkbox"
+                                checked={spot.reveal_name}
+                                onChange={(e) =>
+                                  setField(
+                                    spot.id,
+                                    "reveal_name",
+                                    e.target.checked,
+                                  )
+                                }
+                              />
+                              名前を先に見せる
+                            </label>
+                            <label className="flex items-center gap-1.5 text-xs text-neutral-600">
+                              <input
+                                type="checkbox"
+                                checked={spot.photo_required}
+                                onChange={(e) =>
+                                  setField(
+                                    spot.id,
+                                    "photo_required",
+                                    e.target.checked,
+                                  )
+                                }
+                              />
+                              写真を必須にする
+                            </label>
+                            {/* 選ぶまで中身を伏せて、ワクワク感を作る */}
+                            <label className="flex items-center gap-1.5 text-xs text-neutral-600">
+                              <input
+                                type="checkbox"
+                                checked={spot.is_secret}
+                                onChange={(e) =>
+                                  setField(
+                                    spot.id,
+                                    "is_secret",
+                                    e.target.checked,
+                                  )
+                                }
+                              />
+                              シークレットにする
+                            </label>
+                          </div>
+                          {/* 写真不要のときだけ、達成ボタンの文言を自由に決められる */}
+                          {!spot.photo_required && (
+                            <input
+                              className={inputCls}
+                              placeholder="達成ボタンの文言(既定: ここに来た!)"
+                              value={spot.complete_label ?? ""}
+                              onChange={(e) =>
+                                setField(
+                                  spot.id,
+                                  "complete_label",
+                                  e.target.value,
+                                )
+                              }
+                            />
+                          )}
+                          <textarea
+                            className={inputCls}
+                            rows={2}
+                            placeholder="ミッション本文"
+                            value={spot.mission}
+                            onChange={(e) =>
+                              setField(spot.id, "mission", e.target.value)
+                            }
+                          />
+                          <input
+                            className={inputCls}
+                            placeholder="ヒント(任意)"
+                            value={spot.hint ?? ""}
+                            onChange={(e) =>
+                              setField(spot.id, "hint", e.target.value)
+                            }
+                          />
+                          <input
+                            className={inputCls}
+                            placeholder="一言メッセージ(任意)"
+                            value={spot.message ?? ""}
+                            onChange={(e) =>
+                              setField(spot.id, "message", e.target.value)
+                            }
+                          />
 
-                        <div className="flex justify-between pt-1">
-                          <button
-                            onClick={() => deleteSpot(spot, isPair)}
-                            disabled={busy}
-                            className="text-xs text-red-500"
-                          >
-                            削除
-                          </button>
-                          <button
-                            onClick={() => saveSpot(spot)}
-                            disabled={busy}
-                            className="rounded-lg bg-neutral-800 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-40"
-                          >
-                            {savedId === spot.id ? "保存した!" : "保存"}
-                          </button>
+                          <div className="flex justify-between pt-1">
+                            <button
+                              onClick={() => deleteSpot(spot, isPair)}
+                              disabled={busy}
+                              className="text-xs text-red-500"
+                            >
+                              削除
+                            </button>
+                            <button
+                              onClick={() => saveSpot(spot)}
+                              disabled={busy}
+                              className="rounded-lg bg-neutral-800 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+                            >
+                              {savedId === spot.id ? "保存した!" : "保存"}
+                            </button>
+                          </div>
+
+                          {/* 旅行先の選択肢には、その行き先だけの分岐を足せる */}
+                          {spot.is_destination && (
+                            <button
+                              onClick={() => addBranch(spot.id)}
+                              disabled={busy}
+                              className="w-full rounded-lg border border-dashed border-violet-300 py-2 text-xs text-violet-700 disabled:opacity-40"
+                            >
+                              ↳「{spot.name}」を選んだ時の質問を追加
+                            </button>
+                          )}
                         </div>
-
-                        {/* 旅行先の選択肢には、その行き先だけの分岐を足せる */}
-                        {spot.is_destination && (
-                          <button
-                            onClick={() => addBranch(spot.id)}
-                            disabled={busy}
-                            className="w-full rounded-lg border border-dashed border-violet-300 py-2 text-xs text-violet-700 disabled:opacity-40"
-                          >
-                            ↳「{spot.name}」を選んだ時の質問を追加
-                          </button>
-                        )}
-                      </div>
                       )}
                     </div>
                   ))}

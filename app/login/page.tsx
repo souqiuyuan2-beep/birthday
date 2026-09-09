@@ -5,6 +5,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
+import { Wordmark } from "@/components/ui/JournalHeader";
+import Icon from "@/components/ui/Icon";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -27,7 +29,7 @@ export default function LoginPage() {
         setMessage(
           error.message.includes("already")
             ? "このメールアドレスは登録済みです"
-            : "登録できませんでした。入力を確認してください"
+            : "登録できませんでした。入力を確認してください",
         );
         setBusy(false);
         return;
@@ -37,7 +39,10 @@ export default function LoginPage() {
       return;
     }
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
     if (error) {
       setMessage("メールアドレスかパスワードが違います");
       setBusy(false);
@@ -47,61 +52,135 @@ export default function LoginPage() {
     router.refresh();
   }
 
-  const inputCls =
-    "w-full rounded-2xl border border-neutral-200 bg-white/90 px-5 py-4 outline-none transition-all focus:border-theme";
-
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-8">
-      <h1 className="text-center font-serif text-xl font-semibold tracking-[0.2em] text-neutral-700">
-        ふたりの旅
-      </h1>
-      <p className="mt-3 text-center text-sm text-neutral-500">
-        {mode === "login" ? "ログインしてはじめる" : "アカウントを作る"}
-      </p>
+    <main className="journal-page login-page">
+      <header className="masthead">
+        <Wordmark />
+        <span className="edition">A JOURNAL FOR TWO</span>
+        <a href="#login-title" className="login-jump">
+          {mode === "login" ? "ログインへ" : "登録へ"} →
+        </a>
+      </header>
+      <div className="login-layout">
+        <section className="login-intro">
+          <p className="eyebrow">旅を贈る、思い出を残す。</p>
+          <h1>
+            いつか思い出す、
+            <br />
+            今日をふたりで。
+          </h1>
+          <figure>
+            {/* 公開用の風景写真。利用者の個人写真は入口に使用しない。 */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/train-window.jpg"
+              alt="列車の窓の向こうに広がる、穏やかな海"
+              width="1400"
+              height="933"
+              className="travel-photo"
+              fetchPriority="high"
+            />
+            <figcaption className="photo-caption">
+              <span>車窓から、旅が始まる。</span>
+              <a
+                href="https://unsplash.com/photos/E401NBqwIGg"
+                target="_blank"
+                rel="noreferrer"
+              >
+                PHOTO / REALFISH
+              </a>
+            </figcaption>
+          </figure>
+          <p className="description">
+            行き先を選ぶ時間も、何気なく撮った一枚も。
+            <br />
+            大切な人との旅を、ひとつの記録に。
+          </p>
+        </section>
+        <section className="login-form-panel" aria-labelledby="login-title">
+          <p className="eyebrow">
+            {mode === "login" ? "WELCOME BACK" : "YOUR FIRST PAGE"}
+          </p>
+          <h2 id="login-title">
+            {mode === "login" ? "旅の続きを、ここから。" : "最初の一ページを。"}
+          </h2>
+          <form onSubmit={submit} className="space-y-5">
+            <div>
+              <label htmlFor="email" className="field-label">
+                メールアドレス
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                autoComplete="email"
+                required
+                className="field"
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="field-label">
+                パスワード
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={
+                  mode === "signup" ? "6文字以上で入力" : "パスワードを入力"
+                }
+                autoComplete={
+                  mode === "login" ? "current-password" : "new-password"
+                }
+                minLength={6}
+                required
+                className="field"
+              />
+            </div>
+            {message && (
+              <p role="status" className="text-sm text-neutral-600">
+                {message}
+              </p>
+            )}
+            <button
+              type="submit"
+              disabled={busy}
+              className="button-primary w-full justify-between"
+            >
+              {busy
+                ? "確認しています…"
+                : mode === "login"
+                  ? "ログイン"
+                  : "登録する"}
+              <Icon name="arrow" />
+            </button>
+          </form>
 
-      <form onSubmit={submit} className="mt-8 space-y-3">
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="メールアドレス"
-          autoComplete="email"
-          required
-          className={inputCls}
-        />
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="パスワード(6文字以上)"
-          autoComplete={mode === "login" ? "current-password" : "new-password"}
-          minLength={6}
-          required
-          className={inputCls}
-        />
-        {message && (
-          <p className="text-center text-sm text-neutral-600">{message}</p>
-        )}
-        <button
-          type="submit"
-          disabled={busy}
-          className="w-full rounded-2xl bg-theme py-4 text-base font-medium text-white shadow-md transition-transform active:scale-[0.98] disabled:opacity-40"
-        >
-          {busy ? "確認しています…" : mode === "login" ? "ログイン" : "登録する"}
-        </button>
-      </form>
-
-      <button
-        onClick={() => {
-          setMode(mode === "login" ? "signup" : "login");
-          setMessage(null);
-        }}
-        className="mt-8 text-center text-sm text-neutral-400 underline underline-offset-4"
-      >
-        {mode === "login"
-          ? "アカウントをお持ちでない方はこちら"
-          : "すでにアカウントをお持ちの方はこちら"}
-      </button>
+          <button
+            onClick={() => {
+              setMode(mode === "login" ? "signup" : "login");
+              setMessage(null);
+            }}
+            className="text-link mt-5"
+          >
+            {mode === "login"
+              ? "初めての方は、アカウントを作成"
+              : "アカウントをお持ちの方は、ログイン"}
+          </button>
+          <p className="fine-print mt-8 border-t border-rule pt-5">
+            旅を作る人も、招待された人も、
+            <br />
+            同じアカウントで利用できます。
+          </p>
+        </section>
+      </div>
+      <footer className="login-footer">
+        <span>計画する。巡る。振り返る。</span>
+        <span>ふたりの旅</span>
+      </footer>
     </main>
   );
 }

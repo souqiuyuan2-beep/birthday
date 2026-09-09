@@ -22,7 +22,7 @@ export default async function TripLayout({
   if (!access?.isMember) redirect("/");
 
   return (
-    <div className="pb-[calc(4rem+env(safe-area-inset-bottom))]">
+    <div className="pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
       {children}
       <TabBar />
     </div>

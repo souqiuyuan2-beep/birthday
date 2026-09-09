@@ -6,6 +6,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createServerClient } from "@/lib/supabase/server";
 import PhotoGrid from "@/components/girlfriend/PhotoGrid";
+import JournalHeader from "@/components/ui/JournalHeader";
+import Icon from "@/components/ui/Icon";
 import type { Photo, Spot, Trip } from "@/lib/supabase/types";
 
 export const dynamic = "force-dynamic";
@@ -33,13 +35,13 @@ export default async function AlbumPage({
   const trip = tripRow;
   const spots = tripRow.spots ?? [];
   const photoList = [...(tripRow.photos ?? [])].sort((a, b) =>
-    a.created_at.localeCompare(b.created_at)
+    a.created_at.localeCompare(b.created_at),
   );
   const { data: signed } =
     photoList.length > 0
       ? await supabase.storage.from("photos").createSignedUrls(
           photoList.map((p) => p.storage_path),
-          60 * 60
+          60 * 60,
         )
       : { data: [] };
 
@@ -58,11 +60,12 @@ export default async function AlbumPage({
   });
 
   return (
-    <main className="mx-auto min-h-dvh max-w-md px-6 py-10">
-      <header className="mb-8 text-center">
-        <h1 className="text-2xl font-semibold tracking-wide">{trip.title}</h1>
-        <p className="mt-2 text-sm text-neutral-500">二人のアルバム</p>
-      </header>
+    <main className="journal-page journey-page">
+      <JournalHeader
+        eyebrow="OUR PHOTO ALBUM"
+        title={trip.title}
+        description="何度でも、あの日に戻れる。"
+      />
 
       {items.length === 0 ? (
         <p className="mt-16 text-center text-sm text-neutral-400">
@@ -73,16 +76,11 @@ export default async function AlbumPage({
       )}
 
       <div className="mt-10 flex items-center justify-center gap-6 text-center">
-        <Link
-          href={`/t/${slug}/ending`}
-          className="text-sm text-neutral-400 underline underline-offset-4"
-        >
-          スライドショーを見る
+        <Link href={`/t/${slug}/ending`} className="text-link">
+          <Icon name="book" width="16" height="16" />
+          思い出の本を開く
         </Link>
-        <Link
-          href={`/t/${slug}`}
-          className="text-sm text-neutral-400 underline underline-offset-4"
-        >
+        <Link href={`/t/${slug}`} className="text-link">
           ホームへ戻る
         </Link>
       </div>

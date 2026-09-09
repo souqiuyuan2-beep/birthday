@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import JournalHeader from "@/components/ui/JournalHeader";
 
 import type { Trip } from "@/lib/supabase/types";
 
@@ -98,37 +99,38 @@ export default function TripEditPage() {
 
   if (!trip) {
     return (
-      <main className="mx-auto max-w-md px-5 py-8">
+      <main className="journal-page editor-page pt-8">
         <p className="text-sm text-neutral-400">読み込み中…</p>
       </main>
     );
   }
 
-  const inputCls =
-    "w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 outline-none focus:border-neutral-500";
-  const labelCls = "mb-1.5 block text-sm font-medium text-neutral-600";
+  const inputCls = "field";
+  const labelCls = "field-label";
 
   return (
-    <main className="mx-auto min-h-dvh max-w-md px-5 py-8">
-      <header className="mb-6 flex items-center justify-between">
-        <Link href="/create" className="text-sm text-neutral-400">
+    <main className="journal-page editor-page">
+      <JournalHeader
+        eyebrow="EDIT YOUR JOURNEY"
+        title="旅を整える。"
+        description={trip.title}
+      />
+      <nav
+        aria-label="旅の編集メニュー"
+        className="mb-8 flex flex-wrap items-center justify-between gap-3 border-b border-rule pb-5"
+      >
+        <Link href="/create" className="text-link">
           ← 一覧
         </Link>
         <div className="flex gap-2">
-          <Link
-            href={`/create/${tripId}/dashboard`}
-            className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium"
-          >
-            ダッシュボード
+          <Link href={`/create/${tripId}/dashboard`} className="text-link">
+            進行状況
           </Link>
-          <Link
-            href={`/create/${tripId}/spots`}
-            className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium"
-          >
+          <Link href={`/create/${tripId}/spots`} className="text-link">
             スポット編集 →
           </Link>
         </div>
-      </header>
+      </nav>
 
       <div className="space-y-5">
         <div>
@@ -146,14 +148,6 @@ export default function TripEditPage() {
             className={inputCls}
             value={trip.date ?? ""}
             onChange={(e) => set("date", e.target.value || null)}
-          />
-        </div>
-        <div>
-          <label className={labelCls}>合言葉</label>
-          <input
-            className={inputCls}
-            value={trip.passphrase}
-            onChange={(e) => set("passphrase", e.target.value)}
           />
         </div>
         <div>
@@ -186,8 +180,10 @@ export default function TripEditPage() {
         </div>
 
         {(["opening", "ending"] as const).map((kind) => {
-          const path = kind === "opening" ? trip.opening_bgm_path : trip.ending_bgm_path;
-          const label = kind === "opening" ? "オープニングBGM" : "エンディングBGM";
+          const path =
+            kind === "opening" ? trip.opening_bgm_path : trip.ending_bgm_path;
+          const label =
+            kind === "opening" ? "オープニングBGM" : "エンディングBGM";
           return (
             <div key={kind}>
               <label className={labelCls}>{label}</label>
@@ -206,7 +202,9 @@ export default function TripEditPage() {
                 </div>
               ) : (
                 <label className="block cursor-pointer rounded-xl border border-dashed border-neutral-300 px-4 py-3 text-center text-sm text-neutral-400">
-                  {bgmBusy === kind ? "アップロード中…" : "音源ファイルを選ぶ(mp3など)"}
+                  {bgmBusy === kind
+                    ? "アップロード中…"
+                    : "音源ファイルを選ぶ(mp3など)"}
                   <input
                     type="file"
                     accept="audio/*"
@@ -258,13 +256,13 @@ export default function TripEditPage() {
         )}
       </section>
 
-      <div className="sticky bottom-4 mt-8">
+      <div className="sticky bottom-[calc(5rem+env(safe-area-inset-bottom))] mt-8 bg-paper py-3">
         <button
           onClick={save}
           disabled={busy}
-          className="w-full rounded-xl bg-neutral-800 py-3.5 font-medium text-white shadow-lg disabled:opacity-40"
+          className="button-primary w-full"
         >
-          {busy ? "保存中…" : saved ? "保存した!" : "保存する"}
+          {busy ? "保存中…" : saved ? "保存しました" : "変更を保存"}
         </button>
       </div>
     </main>

@@ -7,6 +7,7 @@ import { useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { compressImage } from "@/lib/image";
 import { uploadPhoto } from "@/lib/upload";
+import Icon from "@/components/ui/Icon";
 
 type Target = { id: string; name: string };
 
@@ -52,7 +53,7 @@ export default function HomePhotoAdd({ targets }: { targets: Target[] }) {
   }
 
   return (
-    <div className="relative z-10 mt-2">
+    <div className="relative mt-7">
       <input
         ref={inputRef}
         type="file"
@@ -68,8 +69,10 @@ export default function HomePhotoAdd({ targets }: { targets: Target[] }) {
 
       <button
         onClick={() => setPicking((v) => !v)}
-        className="w-full rounded-2xl border-2 border-theme bg-white py-3.5 text-base font-medium text-theme-deep transition-transform active:scale-[0.98]"
+        className="button-secondary w-full"
+        aria-expanded={picking}
       >
+        <Icon name="photo" />
         写真を追加する
       </button>
 
@@ -79,16 +82,14 @@ export default function HomePhotoAdd({ targets }: { targets: Target[] }) {
 
       {/* どのスポットの写真か選ぶ */}
       {picking && (
-        <div className="mt-3 rounded-2xl border border-neutral-200 bg-white p-3 shadow-sm">
-          <p className="mb-2 px-1 text-xs text-neutral-500">
-            どの場所の写真?
-          </p>
+        <div className="mt-3 border border-rule bg-[#fffdf8] p-4">
+          <p className="mb-2 px-1 text-xs text-neutral-500">どの場所の写真?</p>
           <ul className="space-y-1">
             {targets.map((t) => (
               <li key={t.id}>
                 <button
                   onClick={() => choose(t.id)}
-                  className="w-full rounded-xl px-3 py-2.5 text-left text-sm text-neutral-700 transition-colors active:bg-neutral-100"
+                  className="w-full border-b border-rule px-1 py-3 text-left text-sm text-ink transition-colors active:bg-neutral-100"
                 >
                   {t.name}
                 </button>
