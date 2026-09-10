@@ -69,7 +69,7 @@ export default function HomePhotoAdd({ targets }: { targets: Target[] }) {
 
       <button
         onClick={() => setPicking((v) => !v)}
-        className="button-secondary w-full"
+        className="button-primary w-full"
         aria-expanded={picking}
       >
         <Icon name="photo" />

@@ -1,6 +1,5 @@
-// 2択スポットの選択UI(クライアント側)
-// - 2枚のカードからタップで選ぶ(選んだ方に丸が付く)→「ここにする!」で確定
-// - 確定後は選んだスポットのミッションへ。一度確定したら選び直せない
+// 最大5択の行き先をポストカードから選ぶ。秘密の選択肢は内容を一切表示しない。
+// 確定後はミッションへ。写真追加までは選び直せる。
 "use client";
 
 import { useState } from "react";
@@ -77,7 +76,7 @@ export default function ChoiceCards({
         ← 戻る
       </button>
 
-      <p className="eyebrow">CHOOSE YOUR NEXT STOP</p>
+      <p className="hand-note">Where shall we go?</p>
       <h1 className="page-title mt-3">
         {options.length >= 3 ? "どこに行く？" : "どっちに行く？"}
       </h1>
@@ -87,7 +86,7 @@ export default function ChoiceCards({
           : "今日は、どちらの気分？"}
       </p>
 
-      <div className="mt-8 space-y-3">
+      <div className="postcard-options">
         {options.map((option, index) => {
           const selected = option.id === selectedId;
           return (
@@ -96,39 +95,45 @@ export default function ChoiceCards({
               onClick={() => setSelectedId(option.id)}
               className="choice-option"
               aria-pressed={selected}
+              data-secret={!!option.secret}
             >
-              <span className="choice-radio">
-                {selected && <Icon name="check" width="14" height="14" />}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="eyebrow mb-2 block">
-                  OPTION {String(index + 1).padStart(2, "0")}
+              <span className="postcard-topline" aria-hidden="true">
+                <span className="hand-note">For our next memory</span>
+                <span className="postcard-stamp">
+                  {String(index + 1).padStart(2, "0")}
                 </span>
-                {option.secret ? (
-                  // 中身を伏せて、選ぶまで分からないようにする
-                  <span className="block">
-                    <span className="block font-serif text-xl">
-                      選ぶまで、秘密。
-                    </span>
-                    <span className="mt-2 block text-xs text-muted">
-                      この先に待つ、小さなサプライズ。
-                    </span>
-                  </span>
-                ) : (
-                  <>
-                    <span className="block font-serif text-lg font-semibold tracking-wide">
-                      {option.displayName}
-                    </span>
-                    <span className="mt-2 block text-sm leading-relaxed text-neutral-600">
-                      {option.mission}
-                    </span>
-                    {option.message && (
-                      <span className="mt-2 block text-xs leading-relaxed text-neutral-400">
-                        {option.message}
+              </span>
+              <span className="postcard-content">
+                <span className="choice-radio">
+                  {selected && <Icon name="check" width="14" height="14" />}
+                </span>
+                <span className="min-w-0 flex-1">
+                  {option.secret ? (
+                    // 中身を伏せて、選ぶまで分からないようにする
+                    <span className="block">
+                      <span className="block font-serif text-xl">
+                        選ぶまで、秘密。
                       </span>
-                    )}
-                  </>
-                )}
+                      <span className="mt-2 block text-xs text-muted">
+                        この先に待つ、小さなサプライズ。
+                      </span>
+                    </span>
+                  ) : (
+                    <>
+                      <span className="block font-serif text-lg font-semibold tracking-wide">
+                        {option.displayName}
+                      </span>
+                      <span className="mt-2 block text-sm leading-relaxed text-neutral-600">
+                        {option.mission}
+                      </span>
+                      {option.message && (
+                        <span className="mt-2 block text-xs leading-relaxed text-neutral-400">
+                          {option.message}
+                        </span>
+                      )}
+                    </>
+                  )}
+                </span>
               </span>
             </button>
           );

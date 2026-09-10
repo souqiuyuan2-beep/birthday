@@ -1,5 +1,5 @@
 // アルバムの写真グリッド+タップ拡大+ページめくりモード(クライアント側)
-// - 一覧: 3列グリッド(遅延読み込み)。タップでオーバーレイ拡大、左右タップで前後移動
+// - 一覧: 白い縁の写真を少しずつずらしたアルバム。遅延読み込み、タップで原画像を拡大
 // - ページ: 本のように1枚ずつ横スワイプでめくって見るモード(scroll-snap)
 // - 拡大表示から写真を削除できる(達成状態はそのまま)
 "use client";
@@ -63,7 +63,7 @@ export default function PhotoGrid({ items }: { items: Item[] }) {
             <button
               key={item.id}
               onClick={() => setOpenIndex(i)}
-              className="text-left"
+              className="album-print text-left"
               aria-label={`${item.spotName}の写真を拡大`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -73,11 +73,11 @@ export default function PhotoGrid({ items }: { items: Item[] }) {
                 loading="lazy"
                 className="block"
               />
-              <span className="mt-2 flex items-start gap-2">
-                <span className="font-mono text-[10px] text-theme">
+              <span className="album-print-caption">
+                <span className="hand-note">
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <span className="text-xs text-muted">{item.spotName}</span>
+                <span>{item.spotName}</span>
               </span>
             </button>
           ))}
@@ -86,7 +86,7 @@ export default function PhotoGrid({ items }: { items: Item[] }) {
         <div className="-mx-6 flex snap-x snap-mandatory gap-5 overflow-x-auto px-6 pb-4">
           {photos.map((item) => (
             <figure key={item.id} className="w-full shrink-0 snap-center">
-              <div className="border border-rule bg-[#fffdf8] p-4 pb-6">
+              <div className="album-book-print">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={item.url}
@@ -98,7 +98,7 @@ export default function PhotoGrid({ items }: { items: Item[] }) {
                   <span className="font-serif text-sm text-neutral-700">
                     {item.spotName}
                   </span>
-                  <span className="ml-3 text-xs text-neutral-400">
+                  <span className="hand-note mt-2 block text-muted">
                     {new Date(item.createdAt).toLocaleDateString("ja-JP")}
                   </span>
                 </figcaption>

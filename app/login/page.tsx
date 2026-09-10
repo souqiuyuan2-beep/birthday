@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
 import { Wordmark } from "@/components/ui/JournalHeader";
 import Icon from "@/components/ui/Icon";
+import FilmCover from "@/components/ui/FilmCover";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -56,41 +57,24 @@ export default function LoginPage() {
     <main className="journal-page login-page">
       <header className="masthead">
         <Wordmark />
-        <span className="edition">A JOURNAL FOR TWO</span>
+        <span className="masthead-note login-note">
+          ふたりで見つける、
+          <br />
+          特別な一日。
+        </span>
         <a href="#login-title" className="login-jump">
           {mode === "login" ? "ログインへ" : "登録へ"} →
         </a>
       </header>
       <div className="login-layout">
         <section className="login-intro">
-          <p className="eyebrow">旅を贈る、思い出を残す。</p>
+          <p className="hand-note">旅を贈る、思い出を残す。</p>
           <h1>
             いつか思い出す、
             <br />
             今日をふたりで。
           </h1>
-          <figure>
-            {/* 公開用の風景写真。利用者の個人写真は入口に使用しない。 */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/images/train-window.jpg"
-              alt="列車の窓の向こうに広がる、穏やかな海"
-              width="1400"
-              height="933"
-              className="travel-photo"
-              fetchPriority="high"
-            />
-            <figcaption className="photo-caption">
-              <span>車窓から、旅が始まる。</span>
-              <a
-                href="https://unsplash.com/photos/E401NBqwIGg"
-                target="_blank"
-                rel="noreferrer"
-              >
-                PHOTO / REALFISH
-              </a>
-            </figcaption>
-          </figure>
+          <FilmCover caption="何気ない一日も、宝物に。" />
           <p className="description">
             行き先を選ぶ時間も、何気なく撮った一枚も。
             <br />
@@ -179,7 +163,13 @@ export default function LoginPage() {
       </div>
       <footer className="login-footer">
         <span>計画する。巡る。振り返る。</span>
-        <span>ふたりの旅</span>
+        <a
+          href="https://unsplash.com/photos/E401NBqwIGg"
+          target="_blank"
+          rel="noreferrer"
+        >
+          車窓写真 / realfish
+        </a>
       </footer>
     </main>
   );

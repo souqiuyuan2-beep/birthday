@@ -6,7 +6,8 @@ import { createServerClient } from "@/lib/supabase/server";
 import { buildSpotGroups, currentGroupIndex } from "@/lib/spot-groups";
 import HomePhotoAdd from "@/components/girlfriend/HomePhotoAdd";
 import TapLink from "@/components/girlfriend/TapLink";
-import JournalHeader from "@/components/ui/JournalHeader";
+import { JournalMasthead } from "@/components/ui/JournalHeader";
+import FilmCover from "@/components/ui/FilmCover";
 import Icon from "@/components/ui/Icon";
 import type { Photo, Progress, Spot, Trip } from "@/lib/supabase/types";
 
@@ -45,7 +46,23 @@ export default async function HomePage({
   for (const photo of photos) {
     if (!firstPhoto.has(photo.spot_id)) firstPhoto.set(photo.spot_id, photo);
   }
-  const stampPaths = [...firstPhoto.values()].map((p) => p.storage_path);
+  // 表紙は進行対象の写真だけ。未到達・選ばなかった分岐を写真からも見せない。
+  const visibleSpotIds = new Set(
+    groups.flatMap((g, i) =>
+      g.effective && (g.done || i === currentIdx) ? [g.effective.id] : [],
+    ),
+  );
+  const coverPhotos = photos
+    .filter((p) => visibleSpotIds.has(p.spot_id))
+    .slice(-2)
+    .reverse();
+  // スタンプと表紙のURLを同じリクエストで発行する。
+  const stampPaths = [
+    ...new Set([
+      ...[...firstPhoto.values()].map((p) => p.storage_path),
+      ...coverPhotos.map((p) => p.storage_path),
+    ]),
+  ];
   const { data: signed } =
     stampPaths.length > 0
       ? await supabase.storage
@@ -53,27 +70,30 @@ export default async function HomePage({
           .createSignedUrls(stampPaths, 60 * 60)
       : { data: [] };
   const stampUrl = new Map<string, string>();
-  [...firstPhoto.entries()].forEach(([spotId], i) => {
+  const urlByPath = new Map<string, string>();
+  stampPaths.forEach((path, i) => {
     const url = signed?.[i]?.signedUrl;
+    if (url) urlByPath.set(path, url);
+  });
+  firstPhoto.forEach((photo, spotId) => {
+    const url = urlByPath.get(photo.storage_path);
     if (url) stampUrl.set(spotId, url);
   });
 
   return (
-    <main className="journal-page journey-page">
-      <JournalHeader
-        eyebrow="OUR TRAVEL JOURNAL"
-        title={trip.title}
-        description={
-          trip.date?.replaceAll("-", ".") ?? "ふたりで巡る、旅の記録。"
-        }
-      />
+    <main className="journal-page journey-page trip-home">
+      <header className="trip-cover-header">
+        <JournalMasthead />
+        <h1 className="trip-cover-title">{trip.title}</h1>
+        <FilmCover
+          date={trip.date}
+          photos={coverPhotos.flatMap((photo) => {
+            const url = urlByPath.get(photo.storage_path);
+            return url ? [{ url, alt: "この旅で撮影した思い出の写真" }] : [];
+          })}
+        />
+      </header>
       <div className="trip-progress">
-        <div className="section-label">
-          <span>旅の歩み</span>
-          <span>
-            {allDone ? "旅の思い出が揃いました" : "ひとつずつ、思い出に。"}
-          </span>
-        </div>
         <div
           className="trip-progress-track"
           role="progressbar"
@@ -81,6 +101,11 @@ export default async function HomePage({
           aria-valuemin={0}
           aria-valuenow={doneCount}
           aria-valuemax={Math.max(groups.length, 1)}
+          aria-valuetext={
+            allDone
+              ? "すべてのミッションを達成"
+              : `${groups.length}件中${doneCount}件を達成`
+          }
         >
           <div
             className="trip-progress-fill"
@@ -91,7 +116,7 @@ export default async function HomePage({
         </div>
       </div>
       <h2 className="section-label">
-        旅のしおり<span>ITINERARY</span>
+        旅のしおり<span className="hand-note">one step at a time</span>
       </h2>
       {groups.length === 0 && (
         <p className="empty-note">
@@ -121,22 +146,21 @@ export default async function HomePage({
               : `/t/${slug}`;
           const content = (
             <div className="itinerary-content">
+              <span className="itinerary-order" aria-hidden="true">
+                {String(i + 1).padStart(2, "0")}
+              </span>
               <span className="itinerary-marker">
                 {state === "done" ? (
                   stamp ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={stamp}
-                      alt=""
-                      className="h-11 w-10 object-cover"
-                    />
+                    <img src={stamp} alt="" className="itinerary-snapshot" />
                   ) : (
                     <Icon name="check" />
                   )
                 ) : state === "locked" ? (
                   <Icon name="lock" width="16" height="16" />
                 ) : (
-                  String(i + 1).padStart(2, "0")
+                  <span className="itinerary-dot" />
                 )}
               </span>
               <div className="min-w-0 flex-1">
@@ -202,7 +226,7 @@ export default async function HomePage({
       />
       {allDone && (
         <section className="memory-invitation">
-          <p className="eyebrow">A DAY TO REMEMBER</p>
+          <p className="hand-note">A day to remember.</p>
           <h2 className="mt-3 font-serif text-2xl">今日が、一冊の思い出に。</h2>
           <p className="description">
             集めた写真と一緒に、ふたりの旅を振り返ろう。
